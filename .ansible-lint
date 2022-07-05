@@ -1,0 +1,16 @@
+---
+skip_list:
+  - meta-incorrect
+  - meta-no-info
+  - role-name
+  - namespace
+  - command-instead-of-shell
+  - command-instead-of-module
+  - package-latest
+
+warn_list:
+  - no-changed-when
+  - truthy
+  - no-jinja-when
+  - experimental
+  - ignore-errors

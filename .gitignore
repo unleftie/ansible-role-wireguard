@@ -1,0 +1,7 @@
+# Local .vscode directories
+**/.vscode/*
+*.code-workspace
+
+test.yml
+
+ansible.cfg

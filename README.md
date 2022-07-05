@@ -1,27 +1,10 @@
-# wireguard_ansible
+# ansible-role-wireguard
 
-This is the ansible automation of the Wireguard VPN set up described here https://www.ckn.io/blog/2017/11/14/wireguard-vpn-typical-setup/
-
-This will create ten VPN client profiles when done.
-
-This project has also been restructured as an ansible role for inclusion in other ansible playbooks.
+Ansible role that installs Wireguard VPN on Linux. This will create a VPN client profile when done.
 
 # Requirements
 
-This assumes an ubuntu 16.04 or 18.04 client. It should also work on other platforms with minimal tweaking.
-
-## Install git
-```bash
-sudo apt-get install git
-```
-
-## Install ansible
-
-```bash
-sudo apt-add-repository ppa:ansible/ansible -y
-sudo apt-get update && sudo apt-get install ansible -y
-```
-For optimal use, use ansible version greater than 2.5
+This assumes an Debian 11 "bullseye" client. It should also work on other platforms with minimal tweaking.
 
 # Server set up
 
