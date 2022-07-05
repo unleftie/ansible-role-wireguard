@@ -1,2 +1,6 @@
 ---
-# vars file for wireguard_role
+client_config_path: 'wireguard_role/profiles'
+
+wg_port: 10100
+
+wg_ip_pool_part: 10.111.111

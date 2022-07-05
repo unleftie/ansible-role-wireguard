@@ -1,4 +1,4 @@
-# ansible-role-wireguard
+# [in development] ansible-role-wireguard
 
 Ansible role that installs Wireguard VPN on Linux. This will create a VPN client profile when done.
 

@@ -1,36 +1,23 @@
 ---
-# tasks file for wireguard_role
+- name: Check if server config already exists
+  stat:
+    path: "/etc/wireguard/{{ wg_interface }}.conf"
+  register: _wg_file_check
 
-- name: Install wireguard and other prequisites on the server
-  include: 'install_wireguard.yml'
-  tags: install_wireguard
+- name: Stop any running service
+  systemd:
+    name: "wg-quick@{{ wg_interface }}.service"
+    state: stopped
+  when: _wg_file_check.stat.exists
 
-- name: Generate client keys and enable wireguard interface
-  include: 'generate_keys.yml'
-  tags: generate_keys
+- include_tasks: "packages.yml"
+  when: not _wg_file_check.stat.exists
 
-- name: Set up nat and firewall rules
-  include: 'nat_and_firewall.yml'
-  tags: nat_and_firewall
+# - include_tasks: "firewall.yml"
 
-- name: Set up unbound for DNS operations
-  include: 'dns.yml'
-  tags: dns
+- include_tasks: "cron.yml"
 
-- name: Download client configs
-  include: 'download_configs.yml'
-  tags: download_configs
+- include_tasks: "generate_keys.yml"
+  when: not _wg_file_check.stat.exists
 
-
-#When you need to add new clients in future specify the tag "add_client"
-#Set the "new_client" variable to the name of your new client config file
-#Set the "new_client_ip" variable to the IP of the new client
-#The new client config will be downloaded to the "wireguard_role/profiles/" folder on your local host
-
-
-- name: Add another client - will only run if the add_client tag is specified
-  include: 'additional_client.yml'
-  vars:
-    new_client: newclient
-    new_client_ip: 10.200.200.12
-  tags: ['never', 'add_client']
+# - include_tasks: "download_configs.yml"

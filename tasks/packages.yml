@@ -1,0 +1,28 @@
+---
+- name: Ensure backports repository is set
+  apt_repository:
+    repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main"
+    state: present
+    install_python_apt: true
+    update_cache: true
+  when:
+    - ansible_distribution == "Debian"
+    - ansible_distribution_major_version in ["10", "11"]
+
+- name: Ensure backports source repository is set
+  apt_repository:
+    repo: "deb-src http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main"
+    state: present
+    install_python_apt: false
+    update_cache: false
+  when:
+    - ansible_distribution == "Debian"
+    - ansible_distribution_major_version in ["10", "11"]
+
+- name: Install WireGuard and other requirements
+  apt:
+    name:
+      - wireguard
+      - qrencode
+    state: present
+    update_cache: true

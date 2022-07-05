@@ -1,0 +1,57 @@
+---
+# - name: Enable IPv4 traffic forwarding
+#   sysctl:
+#     name: net.ipv4.ip_forward
+#     value: 1
+#     sysctl_set: yes
+#     state: present
+#     reload: yes
+
+# - name: Enable IPv4 forwarding continued
+#   command: echo 1 > /proc/sys/net/ipv4/ip_forward
+
+- name: Track input chain
+  iptables:
+    chain: INPUT
+    match: conntrack
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+
+- name: Track forward chain
+  iptables:
+    chain: FORWARD
+    match: conntrack
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+
+- name: Allow incoming wireguard connections
+  iptables:
+    chain: INPUT
+    protocol: udp
+    match: udp
+    destination_port: "{{ wg_port }}"
+    ctstate: NEW
+    jump: ACCEPT
+
+- name: Allow forwarding of packets that stay in the tunnel
+  iptables:
+    chain: FORWARD
+    in_interface: wg0
+    match: conntrack
+    out_interface: wg0
+    ctstate: NEW
+    jump: ACCEPT
+
+- name: Set up NAT
+  iptables:
+    table: nat
+    chain: POSTROUTING
+    source: "{{ wg_ip_pool_part }}.0/24"
+    out_interface: "{{ ansible_default_ipv4.interface }}"
+    jump: MASQUERADE
+
+- name: Install iptables-persistent
+  apt: pkg=iptables-persistent state=present update_cache=true
+
+- name: Set up iptables persistence
+  command: netfilter-persistent save

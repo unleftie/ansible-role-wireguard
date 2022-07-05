@@ -1,0 +1,10 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Ensure sshd service started
+      systemd:
+        name: "wg-quick@{{ wg_interface }}.service"
+        state: started
+  

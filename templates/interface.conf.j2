@@ -1,0 +1,8 @@
+auto {{ wg_interface }}
+iface {{ wg_interface }} inet static
+    address {{ wg_ip_pool_part }}.1/24
+    pre-up ip link add {{ wg_interface }} type wireguard
+    pre-up wg setconf {{ wg_interface }} /etc/wireguard/{{ wg_interface }}.conf
+    post-up sysctl --write net.ipv4.ip_forward=1
+    post-down sysctl --write net.ipv4.ip_forward=0
+    post-down ip link del {{ wg_interface }}

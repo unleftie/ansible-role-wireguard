@@ -1,0 +1,69 @@
+#! /usr/bin/zsh
+# version: 2.0
+
+HOSTNAME=$(hostname)
+NIC=$(ip -o -4 route show to default | awk '{print $5}' | head -n 1)
+WG_PORT="{{ wg_port }}"
+WG_INTERFACE="{{ wg_interface }}"
+WG_IP_POOL_PART="{{ wg_ip_pool_part }}"
+INTERNAL_IP=$(hostname -I | awk '{print $1}')
+INTERNAL_IP_POOL=${INTERNAL_IP%.*}.0/24
+SERVER_ENDPOINT=$(curl -s checkip.amazonaws.com || curl -s ifconfig.co)
+
+[ ! -d "/etc/wireguard/" ] && echo "directory /etc/wireguard/ does not exists" && exit 1
+
+systemctl stop wg-quick@$WG_INTERFACE.service
+
+NEW_OCTET_COUNT=$(($(cat /etc/wireguard/octet.count) + 1))
+echo $NEW_OCTET_COUNT > /etc/wireguard/octet.count
+OCTET_COUNT=$(cat /etc/wireguard/octet.count)
+TAG=$OCTET_COUNT
+
+mkdir -p /etc/wireguard/client-config/
+mkdir -p /etc/wireguard/keys/
+mkdir -p /etc/wireguard/psk/
+mkdir -p /etc/wireguard/pub/
+
+while getopts t: option; do
+    case "${option}" in
+    t) TAG=${OPTARG} ;;
+    esac
+done
+
+wg genpsk > /etc/wireguard/psk/$HOSTNAME-client$OCTET_COUNT.psk 2>/dev/null
+wg genkey > /etc/wireguard/keys/$HOSTNAME-client$OCTET_COUNT.key 2>/dev/null
+wg genkey | tee /etc/wireguard/keys/$HOSTNAME-client$OCTET_COUNT.key | wg pubkey > /etc/wireguard/pub/$HOSTNAME-client$OCTET_COUNT-pub.key
+
+echo "
+[Peer]
+PublicKey = CLIENT_PUB_KEY
+PresharedKey = CLIENT_PSK
+AllowedIPs = $WG_IP_POOL_PART.$OCTET_COUNT/32
+PersistentKeepalive = 30" >> /etc/wireguard/$WG_INTERFACE.conf
+
+sed -i "s,CLIENT_PUB_KEY,$(cat /etc/wireguard/pub/$HOSTNAME-client$OCTET_COUNT-pub.key),g" /etc/wireguard/$WG_INTERFACE.conf
+sed -i "s,CLIENT_PSK,$(cat /etc/wireguard/psk/$HOSTNAME-client$OCTET_COUNT.psk),g" /etc/wireguard/$WG_INTERFACE.conf
+
+echo "# config for client $TAG
+[Interface]
+PrivateKey = CLIENT_KEY
+Address = $WG_IP_POOL_PART.$OCTET_COUNT/24
+DNS = 1.1.1.1, 8.8.8.8
+
+[Peer]
+PublicKey = SERVER_PUB_KEY
+PresharedKey = CLIENT_PSK
+Endpoint = $SERVER_ENDPOINT:$WG_PORT
+AllowedIPs = $INTERNAL_IP_POOL" > /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf
+
+sed -i "s,SERVER_PUB_KEY,$(cat /etc/wireguard/pub/$HOSTNAME-server-pub.key),g" /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf
+sed -i "s,CLIENT_PSK,$(cat /etc/wireguard/psk/$HOSTNAME-client$OCTET_COUNT.psk),g" /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf
+sed -i "s,CLIENT_KEY,$(cat /etc/wireguard/keys/$HOSTNAME-client$OCTET_COUNT.key),g" /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf
+
+chmod 600 /etc/wireguard/*
+
+systemctl restart wg-quick@$WG_INTERFACE.service
+
+echo -e "\nClient config path: /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf"
+echo -e "\nClient config QR code:\n"
+qrencode -t ansiutf8 < /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf

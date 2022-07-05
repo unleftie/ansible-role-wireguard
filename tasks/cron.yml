@@ -1,0 +1,8 @@
+---
+- name: Creates an cron entry
+  cron:
+    name: "Wireguard VPN doesn't start automatically after a system reboot"
+    special_time: "reboot"
+    user: "root"
+    cron_file: "wireguard"
+    job: "wg-quick down {{ wg_interface }} ; sleep 5 && systemctl restart wg-quick@{{ wg_interface }}"
