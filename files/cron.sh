@@ -17,6 +17,8 @@ if [ ! -f "/etc/wireguard/$INTERFACE.conf" ]; then
     exit 1
 fi
 
+wg-quick down $INTERFACE || true
+
 while ! wg show $INTERFACE >/dev/null 2>&1; do
     wg-quick up $INTERFACE && break
     sleep 10
