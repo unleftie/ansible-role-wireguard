@@ -1,6 +1,9 @@
 ---
-client_config_path: 'wireguard_role/profiles'
+client_config_path: "wireguard_role/profiles"
 
 wg_port: 10100
-
 wg_ip_pool_part: 10.111.111
+
+wg_isolate_clients: true
+
+wg_force_update: false

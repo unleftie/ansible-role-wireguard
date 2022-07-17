@@ -1,4 +1,10 @@
 ---
+- name: Ensure apt cache are updated
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+
 - name: Ensure backports repository is set
   apt_repository:
     repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main"
@@ -13,16 +19,31 @@
   apt_repository:
     repo: "deb-src http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main"
     state: present
-    install_python_apt: false
-    update_cache: false
+    install_python_apt: true
+    update_cache: true
   when:
     - ansible_distribution == "Debian"
     - ansible_distribution_major_version in ["10", "11"]
 
-- name: Install WireGuard and other requirements
-  apt:
+- name: Ensure iptables-services package are installed
+  package:
+    state: present
+    name: iptables-services
+  when: ansible_os_family == 'RedHat'
+
+- name: Ensure iptables-persistent package are installed
+  package:
+    state: present
+    name: iptables-persistent
+  when: ansible_os_family == 'Debian'
+
+- name: Ensure dependencies are installed
+  package:
+    state: present
     name:
       - wireguard
       - qrencode
-    state: present
-    update_cache: true
+  notify: stop_wireguard
+
+- name: Flush handlers
+  meta: flush_handlers

@@ -1,23 +1,27 @@
 ---
+- name: Ensure base directories absent
+  file:
+    path: "/etc/wireguard"
+    state: absent
+  when: wg_force_update | bool
+
 - name: Check if server config already exists
   stat:
     path: "/etc/wireguard/{{ wg_interface }}.conf"
   register: _wg_file_check
 
-- name: Stop any running service
-  systemd:
-    name: "wg-quick@{{ wg_interface }}.service"
-    state: stopped
+- name: Stop service
+  shell: "[[ -e {{ wg_interface_path }} ]] && wg-quick down {{ wg_interface }} || true"
+  args:
+    executable: /bin/bash
   when: _wg_file_check.stat.exists
 
 - include_tasks: "packages.yml"
-  when: not _wg_file_check.stat.exists
 
-# - include_tasks: "firewall.yml"
+- include_tasks: "firewall.yml"
 
 - include_tasks: "cron.yml"
 
 - include_tasks: "generate_keys.yml"
   when: not _wg_file_check.stat.exists
-
 # - include_tasks: "download_configs.yml"

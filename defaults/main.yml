@@ -1,4 +1,5 @@
 ---
-octet_count: 2
+wg_octet_count: 2
 
 wg_interface: "wg0"
+wg_interface_path: "/etc/network/interfaces.d/{{ wg_interface }}"

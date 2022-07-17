@@ -1,15 +1,4 @@
 ---
-- name: Stop any running service
-  systemd:
-    name: "wg-quick@{{ wg_interface }}.service"
-    state: stopped
-
-# - name: Stop any running service directly
-#   shell: "wg-quick down wg0"
-#   ignore_errors: true
-#   args:
-#     executable: /bin/bash
-
 - name: Ensure directories exist
   file:
     path: "{{ item }}"
@@ -41,21 +30,21 @@
   changed_when: false
 
 # - name: Generate PSK for client
-#   shell: "wg genpsk > /etc/wireguard/psk/{{ inventory_hostname }}-client{{ octet_count }}.psk"
+#   shell: "wg genpsk > /etc/wireguard/psk/{{ inventory_hostname }}-client{{ wg_octet_count }}.psk"
 #   args:
 #     executable: /bin/bash
 #   changed_when: false
 
 # - name: Generate private key for client
-#   shell: "wg genkey > /etc/wireguard/keys/{{ inventory_hostname }}-client{{ octet_count }}.key"
+#   shell: "wg genkey > /etc/wireguard/keys/{{ inventory_hostname }}-client{{ wg_octet_count }}.key"
 #   args:
 #     executable: /bin/bash
 #   changed_when: false
 
 # - name: Generate public key for client
 #   shell: "set -eo pipefail &&
-#     wg genkey | tee /etc/wireguard/keys/{{ inventory_hostname }}-client{{ octet_count }}.key |
-#     wg pubkey > /etc/wireguard/pub/{{ inventory_hostname }}-client{{ octet_count }}-pub.key"
+#     wg genkey | tee /etc/wireguard/keys/{{ inventory_hostname }}-client{{ wg_octet_count }}.key |
+#     wg pubkey > /etc/wireguard/pub/{{ inventory_hostname }}-client{{ wg_octet_count }}-pub.key"
 #   args:
 #     executable: /bin/bash
 #   changed_when: false
@@ -86,7 +75,7 @@
 - name: Add octet.count file
   lineinfile:
     path: "/etc/wireguard/octet.count"
-    line: "%{{ octet_count }}"
+    line: "%{{ wg_octet_count }}"
     state: present
     owner: "root"
     group: "root"
@@ -100,14 +89,16 @@
     owner: "root"
     group: "root"
     mode: "0600"
+  notify: restart_wireguard
 
 - name: Generate interface config
   template:
     src: "interface.conf.j2"
-    dest: "/etc/network/interfaces.d/{{ wg_interface }}"
+    dest: "{{ wg_interface_path }}"
     owner: "root"
     group: "root"
     mode: "0644"
+  notify: restart_wireguard
 
 - name: Generate add-user script
   template:
@@ -121,5 +112,3 @@
   systemd:
     name: "wg-quick@{{ wg_interface }}"
     enabled: true
-    state: started
-  notify: restart_wireguard

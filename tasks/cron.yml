@@ -1,8 +1,40 @@
 ---
+- name: Ensure cron directory exist
+  file:
+    path: "/usr/local/etc/wireguard"
+    owner: "root"
+    group: "root"
+    state: directory
+    mode: "0755"
+
+- name: Ensure cron script exist
+  copy:
+    src: "cron.sh"
+    dest: "/usr/local/etc/wireguard/cron.sh"
+    owner: "root"
+    group: "root"
+    mode: "0700"
+
+- name: Creates an PATH entry for cron
+  cron:
+    name: "PATH"
+    env: true
+    user: "root"
+    cron_file: "wireguard"
+    job: "/sbin:/bin:/usr/sbin:/usr/bin"
+
+- name: Creates an SHELL entry for cron
+  cron:
+    name: "SHELL"
+    env: true
+    user: "root"
+    cron_file: "wireguard"
+    job: "/bin/bash"
+
 - name: Creates an cron entry
   cron:
-    name: "Wireguard VPN doesn't start automatically after a system reboot"
+    name: "Wireguard interface doesn`t start automatically after a system reboot"
     special_time: "reboot"
     user: "root"
     cron_file: "wireguard"
-    job: "wg-quick down {{ wg_interface }} ; sleep 5 && systemctl restart wg-quick@{{ wg_interface }}"
+    job: "/usr/local/etc/wireguard/cron.sh -i {{ wg_interface }}"

@@ -10,48 +10,66 @@
 # - name: Enable IPv4 forwarding continued
 #   command: echo 1 > /proc/sys/net/ipv4/ip_forward
 
-- name: Track input chain
-  iptables:
-    chain: INPUT
-    match: conntrack
-    ctstate: ESTABLISHED,RELATED
-    jump: ACCEPT
+- name: Enable iptables service
+  block:
+    - name: Enable iptables service
+      systemd:
+        name: iptables
+        state: started
+        enabled: true
+  rescue:
+    - name: Enable iptables via "netfilter-persistent" service
+      systemd:
+        name: netfilter-persistent
+        state: started
+        enabled: true
 
-- name: Track forward chain
-  iptables:
-    chain: FORWARD
-    match: conntrack
-    ctstate: ESTABLISHED,RELATED
-    jump: ACCEPT
+- name: Allow client-to-client communication
+  block:
+    - name: Remove client-to-client isolation rule
+      iptables:
+        chain: FORWARD
+        in_interface: wg0
+        out_interface: wg0
+        ctstate: NEW
+        jump: REJECT
+        reject_with: "icmp-net-prohibited"
+        state: absent
+        comment: "wg clients isolation"
 
-- name: Allow incoming wireguard connections
-  iptables:
-    chain: INPUT
-    protocol: udp
-    match: udp
-    destination_port: "{{ wg_port }}"
-    ctstate: NEW
-    jump: ACCEPT
+    - name: Add client-to-client communication rule
+      iptables:
+        chain: FORWARD
+        in_interface: wg0
+        out_interface: wg0
+        ctstate: NEW,ESTABLISHED
+        jump: ACCEPT
+        state: present
+        comment: "wg client-to-client communication"
+  when: not wg_isolate_clients
+  notify: save_rules
 
-- name: Allow forwarding of packets that stay in the tunnel
-  iptables:
-    chain: FORWARD
-    in_interface: wg0
-    match: conntrack
-    out_interface: wg0
-    ctstate: NEW
-    jump: ACCEPT
+- name: Isolate client-to-client communication
+  block:
+    - name: Remove client-to-client communication rule
+      iptables:
+        chain: FORWARD
+        in_interface: wg0
+        out_interface: wg0
+        ctstate: NEW,ESTABLISHED
+        jump: ACCEPT
+        state: absent
+        comment: "wg client-to-client communication"
 
-- name: Set up NAT
-  iptables:
-    table: nat
-    chain: POSTROUTING
-    source: "{{ wg_ip_pool_part }}.0/24"
-    out_interface: "{{ ansible_default_ipv4.interface }}"
-    jump: MASQUERADE
-
-- name: Install iptables-persistent
-  apt: pkg=iptables-persistent state=present update_cache=true
-
-- name: Set up iptables persistence
-  command: netfilter-persistent save
+    - name: Add client-to-client isolation rule
+      iptables:
+        chain: FORWARD
+        in_interface: wg0
+        out_interface: wg0
+        ctstate: NEW
+        jump: REJECT
+        reject_with: "icmp-net-prohibited"
+        state: present
+        comment: "wg clients isolation"
+  when: wg_isolate_clients | bool
+  notify: save_rules

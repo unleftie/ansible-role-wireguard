@@ -1,7 +1,53 @@
 ---
+# - name: restart_wireguard
+#   systemd:
+#     name: "wg-quick@{{ wg_interface }}"
+#     state: restarted
+#   ignore_errors: "{{ ansible_check_mode }}"
+#   when: not ansible_check_mode
+
 - name: restart_wireguard
-  systemd:
-    name: "wg-quick@{{ wg_interface }}.service"
-    state: restarted
-  ignore_errors: "{{ ansible_check_mode }}"
-  when: not ansible_check_mode
+  shell: "[[ -e {{ wg_interface_path }} ]] &&
+    wg-quick down {{ wg_interface }} || true ; sleep 5 &&
+    wg-quick up {{ wg_interface }}"
+  args:
+    executable: /bin/bash
+
+- name: stop_wireguard
+  shell: "[[ -e {{ wg_interface_path }} ]] && wg-quick down {{ wg_interface }} || true"
+  args:
+    executable: /bin/bash
+
+- name: save_rules
+  block:
+    - name: Stop service
+      shell: "[[ -e {{ wg_interface_path }} ]] && wg-quick down {{ wg_interface }} || true"
+      args:
+        executable: /bin/bash
+      changed_when: false
+      listen: save_rules
+
+    - name: Save rules permanently
+      community.general.iptables_state:
+        ip_version: "ipv4"
+        state: saved
+        path: "/etc/sysconfig/iptables"
+      when: ansible_os_family == 'RedHat'
+      listen: save_rules
+
+    - name: Save rules permanently
+      community.general.iptables_state:
+        ip_version: "ipv4"
+        state: saved
+        path: "/etc/iptables/rules.v4"
+      when: ansible_os_family == 'Debian'
+      listen: save_rules
+
+    - name: Restart service
+      shell: "[[ -e {{ wg_interface_path }} ]] &&
+        wg-quick down {{ wg_interface }} || true ; sleep 5 &&
+        wg-quick up {{ wg_interface }}"
+      args:
+        executable: /bin/bash
+      changed_when: false
+      listen: save_rules
