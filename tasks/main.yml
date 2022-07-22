@@ -10,12 +10,6 @@
     path: "/etc/wireguard/{{ wg_interface }}.conf"
   register: _wg_file_check
 
-- name: Stop service
-  shell: "[[ -e {{ wg_interface_path }} ]] && wg-quick down {{ wg_interface }} || true"
-  args:
-    executable: /bin/bash
-  when: _wg_file_check.stat.exists
-
 - include_tasks: "packages.yml"
 
 - include_tasks: "firewall.yml"
