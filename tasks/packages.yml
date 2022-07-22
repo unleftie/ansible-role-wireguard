@@ -41,8 +41,13 @@
   package:
     state: present
     name:
-      - wireguard
       - qrencode
+      - curl
+
+- name: Ensure wireguard is installed
+  package:
+    state: present
+    name: wireguard
   notify: stop_wireguard
 
 - name: Flush handlers

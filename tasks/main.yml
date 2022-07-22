@@ -20,8 +20,6 @@
 
 - include_tasks: "firewall.yml"
 
-- include_tasks: "cron.yml"
-
 - include_tasks: "generate_keys.yml"
   when: not _wg_file_check.stat.exists
 # - include_tasks: "download_configs.yml"

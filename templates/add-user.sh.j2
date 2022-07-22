@@ -10,19 +10,17 @@ INTERNAL_IP=$(hostname -I | awk '{print $1}')
 INTERNAL_IP_POOL=${INTERNAL_IP%.*}.0/24
 SERVER_ENDPOINT=$(curl -s checkip.amazonaws.com || curl -s ifconfig.co)
 
-[ ! -d "/etc/wireguard/" ] && echo "directory /etc/wireguard/ does not exists" && exit 1
-
-systemctl stop wg-quick@$WG_INTERFACE.service
+[ ! -d "/etc/wireguard" ] && echo "directory /etc/wireguard does not exists" && exit 1
 
 NEW_OCTET_COUNT=$(($(cat /etc/wireguard/octet.count) + 1))
 echo $NEW_OCTET_COUNT > /etc/wireguard/octet.count
 OCTET_COUNT=$(cat /etc/wireguard/octet.count)
 TAG=$OCTET_COUNT
 
-mkdir -p /etc/wireguard/client-config/
-mkdir -p /etc/wireguard/keys/
-mkdir -p /etc/wireguard/psk/
-mkdir -p /etc/wireguard/pub/
+mkdir -p /etc/wireguard/client-config
+mkdir -p /etc/wireguard/keys
+mkdir -p /etc/wireguard/psk
+mkdir -p /etc/wireguard/pub
 
 while getopts t: option; do
     case "${option}" in
@@ -62,8 +60,9 @@ sed -i "s,CLIENT_KEY,$(cat /etc/wireguard/keys/$HOSTNAME-client$OCTET_COUNT.key)
 
 chmod 600 /etc/wireguard/*
 
-systemctl restart wg-quick@$WG_INTERFACE.service
+wg syncconf $WG_INTERFACE <(wg-quick strip $WG_INTERFACE)
 
 echo -e "\nClient config path: /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf"
 echo -e "\nClient config QR code:\n"
-qrencode -t ansiutf8 < /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf
+
+cat /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf | qrencode -t ansiutf8

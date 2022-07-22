@@ -1,30 +1,20 @@
 ---
-# - name: restart_wireguard
-#   systemd:
-#     name: "wg-quick@{{ wg_interface }}"
-#     state: restarted
-#   ignore_errors: "{{ ansible_check_mode }}"
-#   when: not ansible_check_mode
-
 - name: restart_wireguard
-  shell: "[[ -e {{ wg_interface_path }} ]] &&
-    wg-quick down {{ wg_interface }} || true ; sleep 5 &&
-    wg-quick up {{ wg_interface }}"
-  args:
-    executable: /bin/bash
+  systemd:
+    name: "wg-quick@{{ wg_interface }}"
+    state: restarted
 
 - name: stop_wireguard
-  shell: "[[ -e {{ wg_interface_path }} ]] && wg-quick down {{ wg_interface }} || true"
-  args:
-    executable: /bin/bash
+  systemd:
+    name: "wg-quick@{{ wg_interface }}"
+    state: stopped
 
 - name: save_rules
   block:
     - name: Stop service
-      shell: "[[ -e {{ wg_interface_path }} ]] && wg-quick down {{ wg_interface }} || true"
-      args:
-        executable: /bin/bash
-      changed_when: false
+      systemd:
+        name: "wg-quick@{{ wg_interface }}"
+        state: stopped
       listen: save_rules
 
     - name: Save rules permanently
@@ -44,10 +34,7 @@
       listen: save_rules
 
     - name: Restart service
-      shell: "[[ -e {{ wg_interface_path }} ]] &&
-        wg-quick down {{ wg_interface }} || true ; sleep 5 &&
-        wg-quick up {{ wg_interface }}"
-      args:
-        executable: /bin/bash
-      changed_when: false
+      systemd:
+        name: "wg-quick@{{ wg_interface }}"
+        state: restarted
       listen: save_rules

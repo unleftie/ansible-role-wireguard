@@ -75,7 +75,7 @@
 - name: Add octet.count file
   lineinfile:
     path: "/etc/wireguard/octet.count"
-    line: "%{{ wg_octet_count }}"
+    line: "{{ wg_octet_count }}"
     state: present
     owner: "root"
     group: "root"
