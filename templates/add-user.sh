@@ -1,12 +1,6 @@
 #! /bin/bash
 # version: 3.0
 
-while getopts "t:" option; do
-    case "${option}" in
-    t) TAG=${OPTARG} ;;
-    esac
-done
-
 print_error() {
     printf '%sERROR: %s%s\n' "$(printf '\033[31m')" "$*" "$(printf '\033[m')" >&2
     exit 1
@@ -97,7 +91,13 @@ print_config() {
 print_success "configure directories" && configure_directories || print_error "configure directories"
 print_success "configure variables" && configure_variables || print_error "configure variables"
 print_success "configure new octet" && configure_new_octet || print_error "configure new octet"
-print_success "check input" && check_input || print_error "check input"
+
+while getopts "t:" option; do
+    case "${option}" in
+    t) TAG=${OPTARG} ;;
+    esac
+done
+
 print_success "generate client secrets" && generate_client_secrets || print_error "generate client secrets"
 print_success "generate client config" && generate_client_config || print_error "generate client config"
 print_success "check permissions" && check_permissions || print_error "check permissions"
