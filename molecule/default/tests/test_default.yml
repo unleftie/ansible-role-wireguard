@@ -1,0 +1,40 @@
+---
+port:
+  udp:{{ wg_port }}:
+    listening: true
+service:
+  wg-quick@{{ wg_interface }}.service:
+    enabled: true
+    running: true
+command:
+  wg:
+    exit-status: 0
+    exec: "wg show"
+interface:
+  {{ wg_interface }}:
+    exists: true
+    addrs:
+      - "{{ wg_ip_pool_part }}.1/24"
+    mtu: 1420
+file:
+  /etc/network/interfaces.d/{{ wg_interface }}:
+    exists: true
+    mode: "0644"
+    owner: root
+    group: root
+    filetype: file
+    contains:
+      ["address", "iface", "{{ wg_interface }}", "{{ wg_ip_pool_part }}"]
+  /etc/wireguard/{{ wg_interface }}.conf:
+    exists: true
+    mode: "0600"
+    owner: root
+    group: root
+    filetype: file
+    contains:
+      [
+        "ListenPort",
+        "PrivateKey",
+        "SaveConfig = false",
+        "{{ wg_ip_pool_part }}",
+      ]
