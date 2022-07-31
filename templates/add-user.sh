@@ -1,6 +1,12 @@
 #! /bin/bash
 # version: 3.0
 
+while getopts "t:" option; do
+    case "${option}" in
+    t) TAG=${OPTARG} ;;
+    esac
+done
+
 print_error() {
     printf '%sERROR: %s%s\n' "$(printf '\033[31m')" "$*" "$(printf '\033[m')" >&2
     exit 1
@@ -34,14 +40,6 @@ configure_new_octet() {
     echo $NEW_OCTET_COUNT >/etc/wireguard/octet.count
     OCTET_COUNT=$(cat /etc/wireguard/octet.count)
     TAG=$OCTET_COUNT
-}
-
-check_input() {
-    while getopts t: option; do
-        case "${option}" in
-        t) TAG=${OPTARG} ;;
-        esac
-    done
 }
 
 generate_client_secrets() {

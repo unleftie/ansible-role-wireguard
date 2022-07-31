@@ -39,6 +39,8 @@ scenario:
     - create
     - converge
     - verify
+    - converge
+    - verify
     - destroy
 verifier:
   name: ansible
