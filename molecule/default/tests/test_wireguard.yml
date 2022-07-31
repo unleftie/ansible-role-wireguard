@@ -1,7 +1,12 @@
 ---
+package:
+  wireguard:
+    installed: true
 port:
   udp:{{ wg_port }}:
     listening: true
+    ip:
+      - 0.0.0.0
 service:
   wg-quick@{{ wg_interface }}.service:
     enabled: true
@@ -10,6 +15,9 @@ command:
   wg:
     exit-status: 0
     exec: "wg show"
+    stdout:
+      - "interface: {{ wg_interface }}"
+      - "private key:"
 interface:
   {{ wg_interface }}:
     exists: true

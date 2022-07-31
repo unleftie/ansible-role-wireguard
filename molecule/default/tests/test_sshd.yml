@@ -4,10 +4,6 @@ port:
     listening: true
     ip:
       - 0.0.0.0
-  tcp6:22:
-    listening: true
-    ip:
-      - "::"
 service:
   sshd:
     enabled: true

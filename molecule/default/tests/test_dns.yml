@@ -1,0 +1,16 @@
+---
+dns:
+  localhost:
+    resolvable: true
+    addrs:
+      - 127.0.0.1
+  PTR:1.1.1.1:
+    resolvable: true
+    server: 1.1.1.1
+    addrs:
+      - "one.one.one.one."
+  PTR:8.8.8.8:
+    resolvable: true
+    server: 8.8.8.8
+    addrs:
+      - "dns.google."
