@@ -24,6 +24,48 @@
         state: started
         enabled: true
 
+- name: Allow input to wg interface from external
+  iptables:
+    chain: INPUT
+    state: present
+    destination_port: "{{ wg_port }}"
+    ctstate: NEW,ESTABLISHED
+    protocol: udp
+    jump: ACCEPT
+    state: present
+    comment: "wg from external"
+  notify: save_iptables_rules
+
+- name: Allow forwarding (1/2)
+  iptables:
+    chain: FORWARD
+    in_interface: "{{ ansible_default_ipv4.interface }}"
+    out_interface: "{{ wg_interface }}"
+    ctstate: NEW
+    jump: ACCEPT
+    state: present
+    comment: "wg forward"
+
+- name: Allow forwarding (2/2)
+  iptables:
+    chain: FORWARD
+    in_interface: "{{ wg_interface }}"
+    out_interface: "{{ ansible_default_ipv4.interface }}"
+    ctstate: NEW
+    jump: ACCEPT
+    state: present
+    comment: "wg forward"
+
+- name: Allow NAT
+  iptables:
+    chain: POSTROUTING
+    table: nat
+    source: "{{ wg_ip_pool_part }}.0/24"
+    jump: MASQUERADE
+    state: present
+    comment: "wg nat"
+  notify: save_iptables_rules
+
 - name: Allow client-to-client communication
   block:
     - name: Remove client-to-client isolation rule
@@ -47,7 +89,7 @@
         state: present
         comment: "wg client-to-client communication"
   when: not wg_isolate_clients
-  notify: save_rules
+  notify: save_iptables_rules
 
 - name: Isolate client-to-client communication
   block:
@@ -72,4 +114,4 @@
         state: present
         comment: "wg clients isolation"
   when: wg_isolate_clients | bool
-  notify: save_rules
+  notify: save_iptables_rules

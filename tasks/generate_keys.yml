@@ -102,7 +102,7 @@
 
 - name: Generate add-user script
   template:
-    src: "add-user.sh.j2"
+    src: "add-user.sh"
     dest: "/etc/wireguard/add-user.sh"
     owner: "root"
     group: "root"

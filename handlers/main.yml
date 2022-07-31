@@ -9,32 +9,16 @@
     name: "wg-quick@{{ wg_interface }}"
     state: stopped
 
-- name: save_rules
-  block:
-    - name: Stop service
-      systemd:
-        name: "wg-quick@{{ wg_interface }}"
-        state: stopped
-      listen: save_rules
+- name: save_iptables_rules
+  community.general.iptables_state:
+    ip_version: "ipv4"
+    state: saved
+    path: "/etc/sysconfig/iptables"
+  when: ansible_os_family == "RedHat"
 
-    - name: Save rules permanently
-      community.general.iptables_state:
-        ip_version: "ipv4"
-        state: saved
-        path: "/etc/sysconfig/iptables"
-      when: ansible_os_family == 'RedHat'
-      listen: save_rules
-
-    - name: Save rules permanently
-      community.general.iptables_state:
-        ip_version: "ipv4"
-        state: saved
-        path: "/etc/iptables/rules.v4"
-      when: ansible_os_family == 'Debian'
-      listen: save_rules
-
-    - name: Restart service
-      systemd:
-        name: "wg-quick@{{ wg_interface }}"
-        state: restarted
-      listen: save_rules
+- name: save_iptables_rules
+  community.general.iptables_state:
+    ip_version: "ipv4"
+    state: saved
+    path: "/etc/iptables/rules.v4"
+  when: ansible_os_family == "Debian"
