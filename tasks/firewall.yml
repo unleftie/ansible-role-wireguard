@@ -27,7 +27,6 @@
 - name: Allow input to wg interface from external
   iptables:
     chain: INPUT
-    state: present
     destination_port: "{{ wg_port }}"
     ctstate: NEW,ESTABLISHED
     protocol: udp
