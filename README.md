@@ -6,7 +6,7 @@
 | -------- | ------- |
 | debian   | 11      |
 
-## To generate user configuration
+## Generate user configuration
 
 ```sh
 bash /etc/wireguard/add-user.sh -t $CLIENT_TAG
