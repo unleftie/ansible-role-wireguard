@@ -1,25 +1,18 @@
 ---
+# TODO: Allow input from wg0
 - name: Enable IPv4 traffic forwarding
   sysctl:
     name: net.ipv4.ip_forward
     value: 1
-    sysctl_set: yes
+    sysctl_set: true
     state: present
-    reload: yes
+    reload: true
 
-- name: Enable iptables service
-  block:
-    - name: Enable iptables service
-      systemd:
-        name: iptables
-        state: started
-        enabled: true
-  rescue:
-    - name: Enable iptables via "netfilter-persistent" service
-      systemd:
-        name: netfilter-persistent
-        state: started
-        enabled: true
+- name: Enable netfilter-persistent (iptables) service
+  systemd:
+    name: netfilter-persistent
+    state: started
+    enabled: true
 
 - name: Allow input to wg interface from external
   iptables:
@@ -37,20 +30,20 @@
     chain: FORWARD
     in_interface: "{{ ansible_default_ipv4.interface }}"
     out_interface: "{{ wg_interface }}"
-    ctstate: NEW
     jump: ACCEPT
     state: present
     comment: "wg forward"
+  notify: save_iptables_rules
 
 - name: Allow forwarding (2/2)
   iptables:
     chain: FORWARD
     in_interface: "{{ wg_interface }}"
     out_interface: "{{ ansible_default_ipv4.interface }}"
-    ctstate: NEW
     jump: ACCEPT
     state: present
     comment: "wg forward"
+  notify: save_iptables_rules
 
 - name: Allow NAT
   iptables:
@@ -67,8 +60,8 @@
     - name: Remove client-to-client isolation rule
       iptables:
         chain: FORWARD
-        in_interface: wg0
-        out_interface: wg0
+        in_interface: "{{ wg_interface }}"
+        out_interface: "{{ wg_interface }}"
         ctstate: NEW
         jump: REJECT
         reject_with: "icmp-net-prohibited"
@@ -78,8 +71,8 @@
     - name: Add client-to-client communication rule
       iptables:
         chain: FORWARD
-        in_interface: wg0
-        out_interface: wg0
+        in_interface: "{{ wg_interface }}"
+        out_interface: "{{ wg_interface }}"
         ctstate: NEW,ESTABLISHED
         jump: ACCEPT
         state: present
@@ -92,8 +85,8 @@
     - name: Remove client-to-client communication rule
       iptables:
         chain: FORWARD
-        in_interface: wg0
-        out_interface: wg0
+        in_interface: "{{ wg_interface }}"
+        out_interface: "{{ wg_interface }}"
         ctstate: NEW,ESTABLISHED
         jump: ACCEPT
         state: absent
@@ -102,8 +95,8 @@
     - name: Add client-to-client isolation rule
       iptables:
         chain: FORWARD
-        in_interface: wg0
-        out_interface: wg0
+        in_interface: "{{ wg_interface }}"
+        out_interface: "{{ wg_interface }}"
         ctstate: NEW
         jump: REJECT
         reject_with: "icmp-net-prohibited"

@@ -66,6 +66,7 @@ generate_client_config() {
     Endpoint = $SERVER_ENDPOINT:$WG_PORT
     AllowedIPs = $INTERNAL_IP_POOL" | sed 's/^[ \t]*//' >/etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf
 
+    # TODO: check if this file exists
     sed -i "s,SERVER_PUB_KEY,$(cat /etc/wireguard/pub/$HOSTNAME-server-pub.key),g" \
         /etc/wireguard/client-config/$HOSTNAME-client$OCTET_COUNT-$WG_INTERFACE.conf
     sed -i "s,CLIENT_PSK,$(cat /etc/wireguard/psk/$HOSTNAME-client$OCTET_COUNT.psk),g" \
@@ -92,6 +93,7 @@ print_success "configure directories" && configure_directories || print_error "c
 print_success "configure variables" && configure_variables || print_error "configure variables"
 print_success "configure new octet" && configure_new_octet || print_error "configure new octet"
 
+# TODO: AllowedIPs = 0.0.0.0/0
 while getopts "t:" option; do
     case "${option}" in
     t) TAG=${OPTARG} ;;

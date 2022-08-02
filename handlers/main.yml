@@ -15,6 +15,7 @@
     state: saved
     path: "/etc/sysconfig/iptables"
   when: ansible_os_family == "RedHat"
+  listen: save_iptables_rules
 
 - name: save_iptables_rules
   community.general.iptables_state:
@@ -22,3 +23,4 @@
     state: saved
     path: "/etc/iptables/rules.v4"
   when: ansible_os_family == "Debian"
+  listen: save_iptables_rules

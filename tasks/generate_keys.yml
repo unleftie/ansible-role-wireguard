@@ -16,48 +16,28 @@
     ]
 
 - name: Generate server private key
-  shell: "wg genkey > /etc/wireguard/keys/{{ inventory_hostname }}-server.key"
+  shell: "wg genkey > /etc/wireguard/keys/{{ ansible_hostname }}-server.key"
   args:
     executable: /bin/bash
   changed_when: false
 
 - name: Generate server public key
   shell: "set -eo pipefail &&
-    wg genkey | tee /etc/wireguard/keys/{{ inventory_hostname }}-server.key |
-    wg pubkey > /etc/wireguard/pub/{{ inventory_hostname }}-server-pub.key"
+    wg genkey | tee /etc/wireguard/keys/{{ ansible_hostname }}-server.key |
+    wg pubkey > /etc/wireguard/pub/{{ ansible_hostname }}-server-pub.key"
   args:
     executable: /bin/bash
   changed_when: false
 
-# - name: Generate PSK for client
-#   shell: "wg genpsk > /etc/wireguard/psk/{{ inventory_hostname }}-client{{ wg_octet_count }}.psk"
-#   args:
-#     executable: /bin/bash
-#   changed_when: false
-
-# - name: Generate private key for client
-#   shell: "wg genkey > /etc/wireguard/keys/{{ inventory_hostname }}-client{{ wg_octet_count }}.key"
-#   args:
-#     executable: /bin/bash
-#   changed_when: false
-
-# - name: Generate public key for client
-#   shell: "set -eo pipefail &&
-#     wg genkey | tee /etc/wireguard/keys/{{ inventory_hostname }}-client{{ wg_octet_count }}.key |
-#     wg pubkey > /etc/wireguard/pub/{{ inventory_hostname }}-client{{ wg_octet_count }}-pub.key"
-#   args:
-#     executable: /bin/bash
-#   changed_when: false
-
 - name: Register server private key
-  shell: "cat /etc/wireguard/keys/{{ inventory_hostname }}-server.key"
+  shell: "cat /etc/wireguard/keys/{{ ansible_hostname }}-server.key"
   args:
     executable: /bin/bash
   changed_when: false
   register: "server_private_key"
 
 - name: Register server public key
-  shell: "cat /etc/wireguard/pub/{{ inventory_hostname }}-server-pub.key"
+  shell: "cat /etc/wireguard/pub/{{ ansible_hostname }}-server-pub.key"
   args:
     executable: /bin/bash
   changed_when: false
