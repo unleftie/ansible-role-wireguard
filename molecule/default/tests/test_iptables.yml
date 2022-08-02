@@ -1,0 +1,9 @@
+---
+service:
+  netfilter-persistent:
+    enabled: true
+    running: true
+command:
+  iptables:
+    exit-status: 0
+    exec: "iptables -nL"

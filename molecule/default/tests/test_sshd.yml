@@ -11,3 +11,7 @@ service:
 process:
   sshd:
     running: true
+command:
+  sshd:
+    exit-status: 0
+    exec: "sshd -t"
