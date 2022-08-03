@@ -69,7 +69,6 @@
       register: test_results
       with_items: "{{ test_files.stdout_lines }}"
       ignore_errors: true
-      no_log: true
 
     - name: Display details about the results
       debug:
