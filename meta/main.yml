@@ -1,19 +1,16 @@
 ---
 galaxy_info:
   author: "unleftie"
-  role_name: "ansible_role_wireguard"
+  role_name: "wireguard"
   namespace: "none"
   description: "Ansible role that installs Wireguard VPN on Linux"
   company: "none"
   license: "MIT"
-
   min_ansible_version: "2.12"
-
   platforms:
     - name: Debian
       versions:
         - "bullseye"
-
   galaxy_tags:
     - wireguard
     - vpn

@@ -9,8 +9,6 @@ lint: |
   ansible-lint .
 platforms:
   - name: host1
-    # box: gbailey/amzn2
-    # box: generic/rocky8
     box: debian/bullseye64
     memory: 4096
     cpus: 4
