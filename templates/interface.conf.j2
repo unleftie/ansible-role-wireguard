@@ -1,4 +1,3 @@
-auto {{ wg_interface }}
 iface {{ wg_interface }} inet static
     address {{ wg_ip_pool_part }}.1/24
     pre-up ip link del {{ wg_interface }}
