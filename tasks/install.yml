@@ -1,0 +1,107 @@
+---
+- name: Create system group
+  group:
+    name: "{{ wg_system_group }}"
+    system: true
+    state: present
+  when: wg_system_group != "root"
+
+- name: Create system user
+  user:
+    name: "{{ wg_system_user }}"
+    system: true
+    shell: "/usr/sbin/nologin"
+    group: "{{ wg_system_group }}"
+    create_home: false
+  when: wg_system_user != "root"
+
+- name: Ensure base directories exist
+  file:
+    path: "{{ item }}"
+    owner: "{{ wg_system_user }}"
+    group: "{{ wg_system_group }}"
+    state: directory
+    mode: "0640"
+  with_items: ["/etc/wireguard", "/etc/wireguard/client-configs"]
+
+- name: Generate server private key
+  shell: "wg genkey > /etc/wireguard/server.key"
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Ensure server private key permissions are secure
+  file:
+    path: "/etc/wireguard/server.key"
+    owner: "{{ wg_system_user }}"
+    group: "{{ wg_system_group }}"
+    state: file
+    mode: "0400"
+
+- name: Generate server public key
+  shell: "set -eo pipefail &&
+    wg genkey | tee /etc/wireguard/server.key |
+    wg pubkey > /etc/wireguard/server-pub.key"
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Ensure server private key permissions are secure
+  file:
+    path: "/etc/wireguard/server-pub.key"
+    owner: "{{ wg_system_user }}"
+    group: "{{ wg_system_group }}"
+    state: file
+    mode: "0400"
+
+- name: Register server private key
+  shell: "cat /etc/wireguard/server.key"
+  args:
+    executable: /bin/bash
+  changed_when: false
+  register: "server_private_key"
+
+- name: Register server public key
+  shell: "cat /etc/wireguard/server-pub.key"
+  args:
+    executable: /bin/bash
+  changed_when: false
+  register: "server_public_key"
+
+# read permissions for exporter
+- name: Generate server config
+  template:
+    src: "server.conf.j2"
+    dest: "{{ wg_server_config_path }}"
+    owner: "{{ wg_system_user }}"
+    group: "{{ wg_system_group }}"
+    mode: "0640"
+  notify: restart_wireguard
+
+- name: Generate interface config
+  template:
+    src: "interface.conf.j2"
+    dest: "{{ wg_interface_path }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify: restart_wireguard
+
+- name: Add octet.count file
+  lineinfile:
+    path: "/etc/wireguard/octet.count"
+    line: "{{ wg_octet_count }}"
+    state: present
+    owner: "{{ wg_system_user }}"
+    group: "{{ wg_system_group }}"
+    mode: "0600"
+    create: true
+
+# TODO: friendly_name
+- name: Generate add-user script
+  template:
+    src: "add-user.sh"
+    dest: "/etc/wireguard/add-user.sh"
+    owner: "{{ wg_system_user }}"
+    group: "{{ wg_system_group }}"
+    mode: "0700"

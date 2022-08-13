@@ -1,9 +1,13 @@
 ---
 service:
+{% if ansible_os_family == "RedHat" %}
+  iptables:
+{% endif %}
+{% if ansible_os_family == "Debian" %}
   netfilter-persistent:
+{% endif %}
     enabled: true
     running: true
 command:
-  iptables:
+  iptables -nL:
     exit-status: 0
-    exec: "iptables -nL"

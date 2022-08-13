@@ -3,11 +3,7 @@
   systemd:
     name: "wg-quick@{{ wg_interface }}"
     state: restarted
-
-- name: stop_wireguard
-  systemd:
-    name: "wg-quick@{{ wg_interface }}"
-    state: stopped
+    enabled: true
 
 - name: save_iptables_rules
   community.general.iptables_state:

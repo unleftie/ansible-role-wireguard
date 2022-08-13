@@ -3,6 +3,9 @@
   apt:
     update_cache: true
     cache_valid_time: 3600
+  register: _download_package
+  until: _download_package is succeeded
+  retries: 5
   when: ansible_os_family == "Debian"
 
 - name: Ensure backports repository is set
@@ -25,16 +28,22 @@
     - ansible_distribution == "Debian"
     - ansible_distribution_major_version in ["10", "11"]
 
-- name: Ensure iptables-services package are installed
+- name: Ensure iptables-services package is installed
   package:
     state: present
     name: iptables-services
+  register: _download_package
+  until: _download_package is succeeded
+  retries: 5
   when: ansible_os_family == "RedHat"
 
-- name: Ensure iptables-persistent package are installed
+- name: Ensure iptables-persistent package is installed
   package:
     state: present
     name: iptables-persistent
+  register: _download_package
+  until: _download_package is succeeded
+  retries: 5
   when: ansible_os_family == "Debian"
 
 - name: Ensure dependencies are installed
@@ -43,12 +52,14 @@
     name:
       - qrencode
       - curl
+  register: _download_package
+  until: _download_package is succeeded
+  retries: 5
 
 - name: Ensure wireguard is installed
   package:
     state: present
     name: wireguard
-  notify: stop_wireguard
-
-- name: Flush handlers
-  meta: flush_handlers
+  register: _download_package
+  until: _download_package is succeeded
+  retries: 5

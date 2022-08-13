@@ -33,11 +33,11 @@ file:
     filetype: file
     contains:
       ["address", "iface", "{{ wg_interface }}", "{{ wg_ip_pool_part }}"]
-  /etc/wireguard/{{ wg_interface }}.conf:
+  {{ wg_server_config_path }}:
     exists: true
-    mode: "0600"
-    owner: root
-    group: root
+    mode: "0640"
+    owner: {{ wg_system_user }}
+    group: {{ wg_system_group }}
     filetype: file
     contains:
       [

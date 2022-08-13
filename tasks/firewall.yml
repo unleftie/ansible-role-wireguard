@@ -8,11 +8,19 @@
     state: present
     reload: true
 
+- name: Enable iptables service
+  systemd:
+    name: iptables
+    state: started
+    enabled: true
+  when: ansible_os_family == "RedHat"
+
 - name: Enable netfilter-persistent (iptables) service
   systemd:
     name: netfilter-persistent
     state: started
     enabled: true
+  when: ansible_os_family == "Debian"
 
 - name: Allow input to wg interface from external
   iptables:

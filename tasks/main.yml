@@ -1,5 +1,5 @@
 ---
-- name: Ensure base directories absent
+- name: Ensure base directory is absent
   file:
     path: "/etc/wireguard"
     state: absent
@@ -14,6 +14,8 @@
 
 - include_tasks: "firewall.yml"
 
-- include_tasks: "generate_keys.yml"
+- include_tasks: "install.yml"
   when: not _wg_file_check.stat.exists
-# - include_tasks: "download_configs.yml"
+
+- include_tasks: "exporter.yml"
+  when: wg_deploy_exporter | bool

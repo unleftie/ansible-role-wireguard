@@ -1,0 +1,16 @@
+---
+- name: "Get user GID"
+  getent:
+    database: passwd
+    key: "{{ wg_system_user }}"
+
+# TODO: fix variable in variable
+- name: Generate compose config
+  template:
+    src: "exporter-compose.yml"
+    dest: "/etc/wireguard/exporter-compose.yml"
+    owner: "{{ wg_system_user }}"
+    group: "{{ wg_system_group }}"
+    mode: "0400"
+
+# TODO: Deploy
