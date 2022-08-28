@@ -9,7 +9,7 @@
 ## Generate user configuration
 
 ```sh
-bash /etc/wireguard/add-user.sh -t $CLIENT_TAG
+bash /etc/wireguard/add-user.sh -n $CLIENT_NAME
 ```
 
 ## Test Ansible role (Linux)

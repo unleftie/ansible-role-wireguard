@@ -1,11 +1,11 @@
-version: '3.9'
+version: "3.9"
 
 services:
   wireguard-exporter:
     image: mindflavor/prometheus-wireguard-exporter:latest
     container_name: wireguard-exporter
     group_add:
-      - '{{ getent_passwd['wireguard'][2] }}'
+      - "{{ getent_passwd[wg_system_user][2] }}"
     logging:
       driver: "json-file"
     cap_add:
@@ -15,7 +15,7 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
       - "{{ wg_server_config_path }}:{{ wg_server_config_path }}:ro"
     network_mode: host
-    command: [ "--prepend_sudo", "true", "--verbose", "false" ]
+    command: ["--prepend_sudo", "true", "--verbose", "false"]
     environment:
       - PROMETHEUS_WIREGUARD_EXPORTER_ADDRESS=127.0.0.1
       - PROMETHEUS_WIREGUARD_EXPORTER_PORT=9586

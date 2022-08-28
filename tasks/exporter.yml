@@ -4,7 +4,6 @@
     database: passwd
     key: "{{ wg_system_user }}"
 
-# TODO: fix variable in variable
 - name: Generate compose config
   template:
     src: "exporter-compose.yml"
@@ -13,4 +12,16 @@
     group: "{{ wg_system_group }}"
     mode: "0400"
 
-# TODO: Deploy
+- name: Check if docker package is installed
+  package:
+    name: "docker"
+    state: present
+  check_mode: true
+  register: _docker_package_check
+
+- name: Ensure exporter is up
+  shell: "docker compose -f /etc/wireguard/exporter-compose.yml up -d --force-recreate"
+  args:
+    executable: /bin/bash
+  changed_when: false
+  when: _docker_package_check is succeeded

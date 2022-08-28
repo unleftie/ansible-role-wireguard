@@ -1,5 +1,4 @@
 ---
-# TODO: Allow input from wg0
 - name: Enable IPv4 traffic forwarding
   sysctl:
     name: net.ipv4.ip_forward
