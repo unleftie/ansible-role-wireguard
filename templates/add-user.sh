@@ -1,5 +1,5 @@
 #! /bin/bash
-# version: 3.1
+# version: 3.2
 
 set -o pipefail
 
@@ -41,8 +41,9 @@ configure_variables() {
 pre_checks() {
     [ ! -d "/etc/wireguard" ] && print_error "Main directory is missing: [/etc/wireguard]"
     [ ! -e "$SERVER_PUB_KEY_PATH" ] && print_error "File is missing: [$SERVER_PUB_KEY_PATH]"
-    [ ! -z $EXTERNAL_ACCESS ] && [[ $EXTERNAL_ACCESS != "true" && $EXTERNAL_ACCESS != "false" ]] && print_error "Boolean required: [-e EXTERNAL_ACCESS]"
-    [ ! -z $SERVER_ACCESS ] && [[ $SERVER_ACCESS != "true" && $SERVER_ACCESS != "false" ]] && print_error "Boolean required: [-s SERVER_ACCESS]"
+    [ ! -z $EXTERNAL_ACCESS ] && [[ $EXTERNAL_ACCESS != "true" ]] && print_error "Boolean required: [-e EXTERNAL_ACCESS]"
+    [ ! -z $SERVER_ACCESS ] && [[ $SERVER_ACCESS != "true" ]] && print_error "Boolean required: [-s SERVER_ACCESS]"
+    grep -q "friendly_name = $CLIENT_NAME" /etc/wireguard/$WG_INTERFACE.conf && print_error "Client already exists: $CLIENT_NAME"
 }
 
 configure_directories() {
@@ -63,7 +64,7 @@ generate_client_secrets() {
 
 generate_client_config() {
     [[ $EXTERNAL_ACCESS ]] && CLIENT_ALLOWED_IP_POOL="0.0.0.0/0"
-    [ -e "$CLIENT_CONFIG_PATH" ] && mv -i $CLIENT_CONFIG_PATH $CLIENT_CONFIG_PATH.old
+
     echo "
     [Peer]
     # friendly_name = $CLIENT_NAME
@@ -107,6 +108,7 @@ cleanup() {
 firewall() {
     if [[ $SERVER_ACCESS ]]; then
         iptables -A INPUT -s $WG_IP_POOL_PART.$OCTET_COUNT/32 -i $WG_INTERFACE -m comment --comment "server access from wg" -j ACCEPT
+        iptables-save > /etc/iptables/rules.v4
     fi
 }
 
