@@ -1,20 +1,4 @@
 ---
-- name: Create system group
-  group:
-    name: "{{ wg_system_group }}"
-    system: true
-    state: present
-  when: wg_system_group != "root"
-
-- name: Create system user
-  user:
-    name: "{{ wg_system_user }}"
-    system: true
-    shell: "/usr/sbin/nologin"
-    group: "{{ wg_system_group }}"
-    create_home: false
-  when: wg_system_user != "root"
-
 - name: Ensure base directories exist
   file:
     path: "{{ item }}"
@@ -30,29 +14,22 @@
     executable: /bin/bash
   changed_when: false
 
-- name: Ensure server private key permissions are secure
-  file:
-    path: "/etc/wireguard/server.key"
-    owner: "{{ wg_system_user }}"
-    group: "{{ wg_system_group }}"
-    state: file
-    mode: "0400"
-
 - name: Generate server public key
-  shell: "set -eo pipefail &&
-    wg genkey | tee /etc/wireguard/server.key |
-    wg pubkey > /etc/wireguard/server-pub.key"
+  shell: "wg pubkey < /etc/wireguard/server.key > /etc/wireguard/server-pub.key"
   args:
     executable: /bin/bash
   changed_when: false
 
-- name: Ensure server private key permissions are secure
+- name: Protect server keys
   file:
-    path: "/etc/wireguard/server-pub.key"
+    path: "{{ item }}"
     owner: "{{ wg_system_user }}"
     group: "{{ wg_system_group }}"
     state: file
     mode: "0400"
+  with_items:
+    - "/etc/wireguard/server.key"
+    - "/etc/wireguard/server-pub.key"
 
 - name: Register server private key
   shell: "cat /etc/wireguard/server.key"
@@ -60,13 +37,6 @@
     executable: /bin/bash
   changed_when: false
   register: "server_private_key"
-
-- name: Register server public key
-  shell: "cat /etc/wireguard/server-pub.key"
-  args:
-    executable: /bin/bash
-  changed_when: false
-  register: "server_public_key"
 
 # read permissions for exporter
 - name: Generate server config
@@ -96,11 +66,3 @@
     group: "{{ wg_system_group }}"
     mode: "0600"
     create: true
-
-- name: Generate add-user script
-  template:
-    src: "add-user.sh"
-    dest: "/etc/wireguard/add-user.sh"
-    owner: "{{ wg_system_user }}"
-    group: "{{ wg_system_group }}"
-    mode: "0700"
