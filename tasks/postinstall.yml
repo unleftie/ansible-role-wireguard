@@ -1,0 +1,8 @@
+---
+- name: Generate add-user script
+  template:
+    src: "add-user.sh"
+    dest: "/etc/wireguard/add-user.sh"
+    owner: "{{ wg_system_user }}"
+    group: "{{ wg_system_group }}"
+    mode: "0700"

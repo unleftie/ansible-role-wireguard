@@ -17,6 +17,7 @@
     name: "docker"
     state: present
   check_mode: true
+  changed_when: false
   register: _docker_package_check
 
 - name: Ensure exporter is up

@@ -14,8 +14,12 @@
 
 - include_tasks: "firewall.yml"
 
+- include_tasks: "preinstall.yml"
+
 - include_tasks: "install.yml"
   when: not _wg_file_check.stat.exists
+
+- include_tasks: "postinstall.yml"
 
 - include_tasks: "exporter.yml"
   when: wg_deploy_exporter | bool

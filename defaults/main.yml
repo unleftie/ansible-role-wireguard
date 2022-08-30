@@ -1,6 +1,6 @@
 ---
 wg_port: 10100
-wg_ip_pool_part: 10.111.111
+wg_ip_pool_part: 10.100.100
 
 wg_isolate_clients: true
 

@@ -1,0 +1,16 @@
+---
+- name: Create system group
+  group:
+    name: "{{ wg_system_group }}"
+    system: true
+    state: present
+  when: wg_system_group != "root"
+
+- name: Create system user
+  user:
+    name: "{{ wg_system_user }}"
+    system: true
+    shell: "/usr/sbin/nologin"
+    group: "{{ wg_system_group }}"
+    create_home: false
+  when: wg_system_user != "root"
