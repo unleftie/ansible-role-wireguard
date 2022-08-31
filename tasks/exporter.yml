@@ -15,14 +15,19 @@
 - name: Check if docker package is installed
   package:
     name: "docker"
-    state: present
+    state: absent
   check_mode: true
   changed_when: false
   register: _docker_package_check
+
+- name: Check docker service status
+  systemd:
+    name: "docker"
+  register: _docker_service
 
 - name: Ensure exporter is up
   shell: "docker compose -f /etc/wireguard/exporter-compose.yml up -d --force-recreate"
   args:
     executable: /bin/bash
   changed_when: false
-  when: _docker_package_check is succeeded
+  when: _docker_service.status.ActiveState == "active"
