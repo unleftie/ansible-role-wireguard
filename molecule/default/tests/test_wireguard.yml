@@ -12,12 +12,18 @@ service:
     enabled: true
     running: true
 command:
-  wg:
+  interface validaton:
     exit-status: 0
     exec: "wg show"
     stdout:
       - "interface: {{ wg_interface }}"
       - "private key:"
+  public key validaton:
+    exit-status: 0
+    exec: 'bash -c "[ $(wg pubkey < /etc/wireguard/server.key) == $(cat /etc/wireguard/server-pub.key) ]"'
+  private key validaton:
+    exit-status: 0
+    exec: 'bash -c "grep -q $(cat /etc/wireguard/server.key) /etc/wireguard/{{ wg_interface }}.conf"'
 interface:
   {{ wg_interface }}:
     exists: true
