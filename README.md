@@ -1,4 +1,4 @@
-# Wireguard VPN
+# Role for Wireguard VPN setup
 
 ## Compatibility
 
@@ -6,23 +6,31 @@
 | -------- | ------- |
 | debian   | 11      |
 
-## Generate user configuration
+## Dependencies
 
-```sh
-bash /etc/wireguard/add-user.sh -n $CLIENT_NAME
-```
+- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) (v2.12+)
+- [Molecule](https://molecule.readthedocs.io/en/latest/installation.html) (for local testing)
+- [Vagrant](https://www.vagrantup.com/downloads) (for local testing)
+- [VirtualBox](https://www.virtualbox.org/wiki/Downloads) (for local testing)
 
-## Test Ansible role (Linux)
+## Role dependencies
 
-Required:
-[Molecule](https://molecule.readthedocs.io/en/latest/installation.html),
-[Vagrant](https://www.vagrantup.com/downloads),
-[VirtualBox](https://www.virtualbox.org/wiki/Downloads)
+- iptables `(required)`
+- docker compose (see [prometheus_wireguard_exporter](https://github.com/MindFlavor/prometheus_wireguard_exporter))
+- prometheus (see [prometheus_wireguard_exporter](https://github.com/MindFlavor/prometheus_wireguard_exporter))
+
+## Testing
 
 ```sh
 git clone https://github.com/unleftie/ansible-role-wireguard.git
 cd ansible-role-wireguard/
 molecule test
+```
+
+## Adding new clients
+
+```sh
+bash /etc/wireguard/$WG_INTERFACE-files/add-client.sh -n $CLIENT_NAME
 ```
 
 ## 📝 License
