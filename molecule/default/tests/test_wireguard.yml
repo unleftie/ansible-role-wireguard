@@ -20,10 +20,10 @@ command:
       - "private key:"
   public key validaton:
     exit-status: 0
-    exec: 'bash -c "[ $(wg pubkey < /etc/wireguard/server.key) == $(cat /etc/wireguard/server-pub.key) ]"'
+    exec: 'bash -c "[ $(wg pubkey < /etc/wireguard/{{ wg_interface }}-files/server.key) == $(cat /etc/wireguard/{{ wg_interface }}-files/server-pub.key) ]"'
   private key validaton:
     exit-status: 0
-    exec: 'bash -c "grep -q $(cat /etc/wireguard/server.key) /etc/wireguard/{{ wg_interface }}.conf"'
+    exec: 'bash -c "grep -q $(cat /etc/wireguard/{{ wg_interface }}-files/server.key) /etc/wireguard/{{ wg_interface }}-files/{{ wg_interface }}.conf"'
 interface:
   {{ wg_interface }}:
     exists: true
@@ -52,3 +52,15 @@ file:
         "SaveConfig = false",
         "{{ wg_ip_pool_part }}",
       ]
+http:
+  http://127.0.0.1:9586/metrics:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+    body: ["wireguard_sent_bytes_total", "wireguard_received_bytes_total"]
+{% if wg_deploy_exporter %}
+    skip: false
+{% else %}
+    skip: true
+{% endif %}
