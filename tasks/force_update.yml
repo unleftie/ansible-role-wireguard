@@ -1,0 +1,14 @@
+---
+- name: Ensure interface is stopped
+  systemd:
+    name: "wg-quick@{{ wg_interface }}"
+    state: stopped
+
+- name: Ensure base files are absent
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "/etc/wireguard/{{ wg_interface }}-files"
+    - "/etc/wireguard/{{ wg_interface }}.conf"
+    - "{{ wg_interface_path }}"

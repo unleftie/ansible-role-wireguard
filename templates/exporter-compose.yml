@@ -13,13 +13,13 @@ services:
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
-      - "{{ wg_server_config_path }}:{{ wg_server_config_path }}:ro"
+      - "{{ wg_server_config_path }}:/{{ wg_interface }}.conf:ro"
     network_mode: host
     command: ["--prepend_sudo", "true", "--verbose", "false"]
     environment:
       - PROMETHEUS_WIREGUARD_EXPORTER_ADDRESS=127.0.0.1
       - PROMETHEUS_WIREGUARD_EXPORTER_PORT=9586
       - PROMETHEUS_WIREGUARD_EXPORTER_INTERFACES={{ wg_interface }}
-      - PROMETHEUS_WIREGUARD_EXPORTER_CONFIG_FILE_NAMES={{ wg_server_config_path }}
+      - PROMETHEUS_WIREGUARD_EXPORTER_CONFIG_FILE_NAMES=/{{ wg_interface }}.conf
       - PROMETHEUS_WIREGUARD_EXPORTER_EXPORT_REMOTE_IP_AND_PORT_ENABLED=true
     restart: unless-stopped

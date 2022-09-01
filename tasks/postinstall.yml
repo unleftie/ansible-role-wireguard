@@ -1,8 +1,15 @@
 ---
-- name: Generate add-user script
+- name: Generate script to add new clients
   template:
-    src: "add-user.sh"
-    dest: "/etc/wireguard/add-user.sh"
+    src: "add-client.sh"
+    dest: "/etc/wireguard/{{ wg_interface }}-files/add-client.sh"
     owner: "{{ wg_system_user }}"
     group: "{{ wg_system_group }}"
     mode: "0700"
+
+# for systemd unit
+- name: Create a symbolic link
+  file:
+    src: "{{ wg_server_config_path }}"
+    dest: "/etc/wireguard/{{ wg_interface }}.conf"
+    state: link

@@ -7,7 +7,7 @@
 - name: Generate compose config
   template:
     src: "exporter-compose.yml"
-    dest: "/etc/wireguard/exporter-compose.yml"
+    dest: "/etc/wireguard/{{ wg_interface }}-files/exporter-compose.yml"
     owner: "{{ wg_system_user }}"
     group: "{{ wg_system_group }}"
     mode: "0400"
@@ -26,7 +26,7 @@
   register: _docker_service
 
 - name: Ensure exporter is up
-  shell: "docker compose -f /etc/wireguard/exporter-compose.yml up -d --force-recreate"
+  shell: "docker compose -f /etc/wireguard/{{ wg_interface }}-files/exporter-compose.yml up -d --force-recreate"
   args:
     executable: /bin/bash
   changed_when: false

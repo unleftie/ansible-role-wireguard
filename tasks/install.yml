@@ -6,16 +6,18 @@
     group: "{{ wg_system_group }}"
     state: directory
     mode: "0640"
-  with_items: ["/etc/wireguard", "/etc/wireguard/client-configs"]
+  with_items:
+    - "/etc/wireguard/{{ wg_interface }}-files"
+    - "/etc/wireguard/{{ wg_interface }}-files/client-configs"
 
 - name: Generate server private key
-  shell: "wg genkey > /etc/wireguard/server.key"
+  shell: "wg genkey > /etc/wireguard/{{ wg_interface }}-files/server.key"
   args:
     executable: /bin/bash
   changed_when: false
 
 - name: Generate server public key
-  shell: "wg pubkey < /etc/wireguard/server.key > /etc/wireguard/server-pub.key"
+  shell: "wg pubkey < /etc/wireguard/{{ wg_interface }}-files/server.key > /etc/wireguard/{{ wg_interface }}-files/server-pub.key"
   args:
     executable: /bin/bash
   changed_when: false
@@ -28,11 +30,11 @@
     state: file
     mode: "0400"
   with_items:
-    - "/etc/wireguard/server.key"
-    - "/etc/wireguard/server-pub.key"
+    - "/etc/wireguard/{{ wg_interface }}-files/server.key"
+    - "/etc/wireguard/{{ wg_interface }}-files/server-pub.key"
 
 - name: Register server private key
-  shell: "cat /etc/wireguard/server.key"
+  shell: "cat /etc/wireguard/{{ wg_interface }}-files/server.key"
   args:
     executable: /bin/bash
   changed_when: false
@@ -59,8 +61,8 @@
 
 - name: Add octet.count file
   lineinfile:
-    path: "/etc/wireguard/octet.count"
-    line: "{{ wg_octet_count }}"
+    path: "/etc/wireguard/{{ wg_interface }}-files/octet.count"
+    line: "{{ wg_initial_octet }}"
     state: present
     owner: "{{ wg_system_user }}"
     group: "{{ wg_system_group }}"

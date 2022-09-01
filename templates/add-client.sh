@@ -29,31 +29,31 @@ configure_variables() {
     INTERNAL_IP=$(hostname -I | awk '{print $1}')
 
     SERVER_ENDPOINT=$(curl -s checkip.amazonaws.com || curl -s ident.me)
-    SERVER_PUB_KEY_PATH="/etc/wireguard/server-pub.key"
+    SERVER_PUB_KEY_PATH="/etc/wireguard/$WG_INTERFACE-files/server-pub.key"
 
-    CLIENT_PUB_KEY_PATH="/etc/wireguard/tmp/client-pub.key"
-    CLIENT_KEY_PATH="/etc/wireguard/tmp/client.key"
-    CLIENT_PSK_PATH="/etc/wireguard/tmp/client.psk"
-    CLIENT_CONFIG_PATH="/etc/wireguard/client-configs/$HOSTNAME-$WG_INTERFACE-client-$CLIENT_NAME.conf"
+    CLIENT_PUB_KEY_PATH="/etc/wireguard/$WG_INTERFACE-files/tmp/client-pub.key"
+    CLIENT_KEY_PATH="/etc/wireguard/$WG_INTERFACE-files/tmp/client.key"
+    CLIENT_PSK_PATH="/etc/wireguard/$WG_INTERFACE-files/tmp/client.psk"
+    CLIENT_CONFIG_PATH="/etc/wireguard/$WG_INTERFACE-files/client-configs/$HOSTNAME-$WG_INTERFACE-client-$CLIENT_NAME.conf"
     CLIENT_ALLOWED_IP_POOL=${INTERNAL_IP%.*}.0/24
 }
 
 pre_checks() {
-    [ ! -d "/etc/wireguard" ] && print_error "Main directory is missing: [/etc/wireguard]"
+    [ ! -d "/etc/wireguard/$WG_INTERFACE-files" ] && print_error "Main directory is missing: [/etc/wireguard/$WG_INTERFACE-files]"
     [ ! -e "$SERVER_PUB_KEY_PATH" ] && print_error "File is missing: [$SERVER_PUB_KEY_PATH]"
     [ ! -z $EXTERNAL_ACCESS ] && [[ $EXTERNAL_ACCESS != "true" ]] && print_error "Boolean required: [-e EXTERNAL_ACCESS]"
     [ ! -z $SERVER_ACCESS ] && [[ $SERVER_ACCESS != "true" ]] && print_error "Boolean required: [-s SERVER_ACCESS]"
-    grep -q "friendly_name = $CLIENT_NAME" /etc/wireguard/$WG_INTERFACE.conf && print_error "Client already exists: $CLIENT_NAME"
+    grep -q "friendly_name = $CLIENT_NAME" /etc/wireguard/$WG_INTERFACE-files/$WG_INTERFACE.conf && print_error "Client already exists: $CLIENT_NAME"
 }
 
 configure_directories() {
-    mkdir -p /etc/wireguard/client-configs
-    mkdir -p /etc/wireguard/tmp
+    mkdir -p /etc/wireguard/$WG_INTERFACE-files/client-configs
+    mkdir -p /etc/wireguard/$WG_INTERFACE-files/tmp
 }
 
 configure_new_octet() {
-    OCTET_COUNT=$(($(cat /etc/wireguard/octet.count) + 1))
-    echo $OCTET_COUNT >/etc/wireguard/octet.count
+    OCTET_COUNT=$(($(cat /etc/wireguard/$WG_INTERFACE-files/octet.count) + 1))
+    echo $OCTET_COUNT >/etc/wireguard/$WG_INTERFACE-files/octet.count
 }
 
 generate_client_secrets() {
@@ -71,10 +71,10 @@ generate_client_config() {
     PublicKey = CLIENT_PUB_KEY
     PresharedKey = CLIENT_PSK
     AllowedIPs = $WG_IP_POOL_PART.$OCTET_COUNT/32
-    PersistentKeepalive = 30" | sed 's/^[ \t]*//' >>/etc/wireguard/$WG_INTERFACE.conf
+    PersistentKeepalive = 30" | sed 's/^[ \t]*//' >>/etc/wireguard/$WG_INTERFACE-files/$WG_INTERFACE.conf
 
-    sed -i "s,CLIENT_PUB_KEY,$(cat $CLIENT_PUB_KEY_PATH),g" /etc/wireguard/$WG_INTERFACE.conf
-    sed -i "s,CLIENT_PSK,$(cat $CLIENT_PSK_PATH),g" /etc/wireguard/$WG_INTERFACE.conf
+    sed -i "s,CLIENT_PUB_KEY,$(cat $CLIENT_PUB_KEY_PATH),g" /etc/wireguard/$WG_INTERFACE-files/$WG_INTERFACE.conf
+    sed -i "s,CLIENT_PSK,$(cat $CLIENT_PSK_PATH),g" /etc/wireguard/$WG_INTERFACE-files/$WG_INTERFACE.conf
 
     echo "# config for client $CLIENT_NAME
     [Interface]
@@ -102,13 +102,13 @@ interface_reload() {
 }
 
 cleanup() {
-    rm -rfd /etc/wireguard/tmp
+    rm -rfd /etc/wireguard/$WG_INTERFACE-files/tmp
 }
 
 firewall() {
     if [[ $SERVER_ACCESS ]]; then
-        iptables -A INPUT -s $WG_IP_POOL_PART.$OCTET_COUNT/32 -i $WG_INTERFACE -m comment --comment "server access from wg" -j ACCEPT
-        iptables-save > /etc/iptables/rules.v4
+        iptables -A INPUT -s $WG_IP_POOL_PART.$OCTET_COUNT/32 -i $WG_INTERFACE -m comment --comment "server access from $WG_INTERFACE" -j ACCEPT
+        iptables-save >/etc/iptables/rules.v4
     fi
 }
 

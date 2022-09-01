@@ -2,5 +2,5 @@ iface {{ wg_interface }} inet static
     address {{ wg_ip_pool_part }}.1/24
     pre-up ip link del {{ wg_interface }}
     pre-up ip link add {{ wg_interface }} type wireguard
-    pre-up wg setconf {{ wg_interface }} /etc/wireguard/{{ wg_interface }}.conf
+    pre-up wg setconf {{ wg_interface }} /etc/wireguard/{{ wg_interface }}-files/{{ wg_interface }}.conf
     post-down ip link del {{ wg_interface }}

@@ -1,5 +1,5 @@
 ---
-wg_octet_count: 1
+wg_initial_octet: 1
 
 wg_interface: "wg0"
 wg_interface_path: "/etc/network/interfaces.d/{{ wg_interface }}"
@@ -7,4 +7,4 @@ wg_interface_path: "/etc/network/interfaces.d/{{ wg_interface }}"
 wg_system_group: "wireguard"
 wg_system_user: "wireguard"
 
-wg_server_config_path: "/etc/wireguard/{{ wg_interface }}.conf"
+wg_server_config_path: "/etc/wireguard/{{ wg_interface }}-files/{{ wg_interface }}.conf"

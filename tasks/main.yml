@@ -1,13 +1,10 @@
 ---
-- name: Ensure base directory is absent
-  file:
-    path: "/etc/wireguard"
-    state: absent
+- include_tasks: "force_update.yml"
   when: wg_force_update | bool
 
-- name: Check if server config already exists
+- name: Check if server config file exists
   stat:
-    path: "/etc/wireguard/{{ wg_interface }}.conf"
+    path: "{{ wg_server_config_path }}"
   register: _wg_file_check
 
 - include_tasks: "packages.yml"
