@@ -1,13 +1,13 @@
 ---
-- name: "Get user GID"
+- name: Register passwd file
   getent:
     database: passwd
     key: "{{ wg_system_user }}"
 
 - name: Generate compose config
   template:
-    src: "exporter-compose.yml"
-    dest: "/etc/wireguard/{{ wg_interface }}-files/exporter-compose.yml"
+    src: "docker-compose.yml"
+    dest: "/etc/wireguard/{{ wg_interface }}-files/docker-compose.yml"
     owner: "{{ wg_system_user }}"
     group: "{{ wg_system_group }}"
     mode: "0400"
