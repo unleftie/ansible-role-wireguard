@@ -26,7 +26,7 @@
   register: _docker_service
 
 - name: Ensure exporter is up
-  shell: "docker compose -f /etc/wireguard/{{ wg_interface }}-files/exporter-compose.yml up -d --force-recreate"
+  shell: "docker compose -f /etc/wireguard/{{ wg_interface }}-files/docker-compose.yml up -d --force-recreate"
   args:
     executable: /bin/bash
   changed_when: false
