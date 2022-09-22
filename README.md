@@ -30,7 +30,7 @@ molecule test
 ## Adding new clients
 
 ```sh
-bash /etc/wireguard/$WG_INTERFACE-files/add-client.sh -n $CLIENT_NAME
+bash /etc/wireguard/$WG_INTERFACE-files/add-client.sh
 ```
 
 ## 📝 License
