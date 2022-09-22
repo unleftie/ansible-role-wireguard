@@ -52,6 +52,28 @@
     comment: "wg forward"
   notify: save_iptables_rules
 
+- name: Allow dns tcp access from wg
+  iptables:
+    chain: INPUT
+    in_interface: "{{ wg_interface }}"
+    destination_port: "53"
+    protocol: tcp
+    jump: ACCEPT
+    state: present
+    comment: "dns tcp access from {{ wg_interface }}"
+  notify: save_iptables_rules
+
+- name: Allow dns udp access from wg
+  iptables:
+    chain: INPUT
+    in_interface: "{{ wg_interface }}"
+    destination_port: "53"
+    protocol: udp
+    jump: ACCEPT
+    state: present
+    comment: "dns udp access from {{ wg_interface }}"
+  notify: save_iptables_rules
+
 - name: Allow NAT
   iptables:
     chain: POSTROUTING
