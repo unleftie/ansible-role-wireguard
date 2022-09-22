@@ -8,7 +8,7 @@
     mode: "0640"
   with_items:
     - "/etc/wireguard/{{ wg_interface }}-files"
-    - "/etc/wireguard/{{ wg_interface }}-files/client-configs"
+    - "/etc/wireguard/{{ wg_interface }}-files/clients"
 
 - name: Generate server private key
   shell: "wg genkey > /etc/wireguard/{{ wg_interface }}-files/server.key"
