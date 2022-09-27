@@ -53,7 +53,7 @@ function configure_variables() {
     NIC=$(ip -o -4 route show to default | awk '{print $5}' | head -n 1)
     WG_PORT="{{ wg_port }}"
     WG_INTERFACE="{{ wg_interface }}"
-    WG_IP_POOL_PART="{{ wg_ip_pool_part }}"
+    WG_SHORT_IP_POOL_PART="{{ wg_short_ip_pool_part }}"
     INTERNAL_IP=$(hostname -I | awk '{print $1}')
 
     MAIN_DIRECTORY_PATH="/etc/wireguard/$WG_INTERFACE-files"
@@ -100,7 +100,7 @@ function generate_client_secrets() {
 
 function generate_client_config() {
     [[ $EXTERNAL_ACCESS == "true" ]] && CLIENT_ALLOWED_IP_POOL="0.0.0.0/0"
-    [[ $INTERNAL_DNS == "true" ]] && CLIENT_DNS="$WG_IP_POOL_PART.1" || CLIENT_DNS="1.1.1.1, 8.8.8.8"
+    [[ $INTERNAL_DNS == "true" ]] && CLIENT_DNS="$WG_SHORT_IP_POOL_PART.1" || CLIENT_DNS="1.1.1.1, 8.8.8.8"
     CLIENT_CONFIG_PATH="$MAIN_DIRECTORY_PATH/clients/$CLIENT_NAME.conf"
 
     echo "
@@ -108,13 +108,13 @@ function generate_client_config() {
     # friendly_name = $CLIENT_NAME
     PublicKey = $CLIENT_PUB_KEY
     PresharedKey = $CLIENT_PSK
-    AllowedIPs = $WG_IP_POOL_PART.$OCTET_COUNT/32
+    AllowedIPs = $WG_SHORT_IP_POOL_PART.$OCTET_COUNT/32
     PersistentKeepalive = 30" | sed 's/^[ \t]*//' >>$SERVER_CONFIG_PATH
 
     echo "# config for client $CLIENT_NAME
     [Interface]
     PrivateKey = $CLIENT_KEY
-    Address = $WG_IP_POOL_PART.$OCTET_COUNT/24
+    Address = $WG_SHORT_IP_POOL_PART.$OCTET_COUNT/24
     DNS = $CLIENT_DNS
 
     [Peer]
@@ -139,7 +139,7 @@ function interface_reload() {
 
 function firewall() {
     if [[ $SERVER_ACCESS == "true" ]]; then
-        iptables -A INPUT -s $WG_IP_POOL_PART.$OCTET_COUNT/32 -i $WG_INTERFACE -m comment --comment "server access from $WG_INTERFACE" -j ACCEPT
+        iptables -A INPUT -s $WG_SHORT_IP_POOL_PART.$OCTET_COUNT/32 -i $WG_INTERFACE -m comment --comment "server access from $WG_INTERFACE" -j ACCEPT
         iptables-save >/etc/iptables/rules.v4
     fi
 }

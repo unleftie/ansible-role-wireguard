@@ -56,6 +56,7 @@
   iptables:
     chain: INPUT
     in_interface: "{{ wg_interface }}"
+    source: "{{ wg_ip_pool }}"
     destination_port: "53"
     protocol: tcp
     jump: ACCEPT
@@ -67,6 +68,7 @@
   iptables:
     chain: INPUT
     in_interface: "{{ wg_interface }}"
+    source: "{{ wg_ip_pool }}"
     destination_port: "53"
     protocol: udp
     jump: ACCEPT
@@ -78,7 +80,7 @@
   iptables:
     chain: POSTROUTING
     table: nat
-    source: "{{ wg_ip_pool_part }}.0/24"
+    source: "{{ wg_ip_pool }}"
     jump: MASQUERADE
     state: present
     comment: "wg nat"

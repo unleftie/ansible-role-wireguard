@@ -1,6 +1,11 @@
 ---
 wg_initial_octet: 1
 
+wg_ip_pool_part: "{{ wg_short_ip_pool_part }}.0"
+wg_ip_pool: "{{ wg_ip_pool_part }}/{{ wg_cidr }}"
+
+wg_interface_address: "{{ wg_short_ip_pool_part }}.1/{{ wg_cidr }}"
+
 wg_interface: "wg0"
 wg_interface_path: "/etc/network/interfaces.d/{{ wg_interface }}"
 

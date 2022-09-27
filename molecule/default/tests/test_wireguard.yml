@@ -28,7 +28,7 @@ interface:
   {{ wg_interface }}:
     exists: true
     addrs:
-      - "{{ wg_ip_pool_part }}.1/24"
+      - "{{ wg_interface_address }}"
     mtu: 1420
 file:
   /etc/network/interfaces.d/{{ wg_interface }}:
@@ -38,7 +38,7 @@ file:
     group: root
     filetype: file
     contains:
-      ["address", "iface", "{{ wg_interface }}", "{{ wg_ip_pool_part }}"]
+      ["address", "iface", "{{ wg_interface }}", "{{ wg_interface_address }}"]
   {{ wg_server_config_path }}:
     exists: true
     mode: "0640"
@@ -50,7 +50,7 @@ file:
         "ListenPort",
         "PrivateKey",
         "SaveConfig = false",
-        "{{ wg_ip_pool_part }}",
+        "{{ wg_interface_address }}",
       ]
 http:
   http://127.0.0.1:9586/metrics:
