@@ -12,6 +12,8 @@
       when: ansible_os_family == "Debian"
   tasks:
     # - include_role:
+    #     name: "zsh"
+    # - include_role:
     #     name: "docker"
     - include_role:
         name: "wireguard"
