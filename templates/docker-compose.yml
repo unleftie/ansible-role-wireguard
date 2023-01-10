@@ -15,7 +15,7 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
       - "{{ wg_server_config_path }}:/{{ wg_interface }}.conf:ro"
     network_mode: host
-    command: ["--prepend_sudo", "true", "--verbose", "false"]
+    command: [ "--prepend_sudo", "true", "--verbose", "false" ]
     environment:
       - PROMETHEUS_WIREGUARD_EXPORTER_ADDRESS=127.0.0.1
       - PROMETHEUS_WIREGUARD_EXPORTER_PORT=9586
@@ -23,3 +23,9 @@ services:
       - PROMETHEUS_WIREGUARD_EXPORTER_CONFIG_FILE_NAMES=/{{ wg_interface }}.conf
       - PROMETHEUS_WIREGUARD_EXPORTER_EXPORT_REMOTE_IP_AND_PORT_ENABLED=true
     restart: unless-stopped
+    healthcheck:
+      test: wget -q -O - 127.0.0.1:9586/metrics | grep -q "wireguard_sent_bytes_total"
+      interval: 120s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
