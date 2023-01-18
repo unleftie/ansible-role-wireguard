@@ -35,21 +35,23 @@
 - name: Allow forwarding (1/2)
   iptables:
     chain: FORWARD
-    in_interface: "{{ ansible_default_ipv4.interface }}"
+    in_interface: "{{ item }}"
     out_interface: "{{ wg_interface }}"
     jump: ACCEPT
     state: present
-    comment: "wg forward"
+    comment: "wg forward from {{ item }} to {{ wg_interface }}"
+  with_items: "{{ ansible_interfaces | reject('search', 'lo') }}"
   notify: save_iptables_rules
 
 - name: Allow forwarding (2/2)
   iptables:
     chain: FORWARD
     in_interface: "{{ wg_interface }}"
-    out_interface: "{{ ansible_default_ipv4.interface }}"
+    out_interface: "{{ item }}"
     jump: ACCEPT
     state: present
-    comment: "wg forward"
+    comment: "wg forward from {{ wg_interface }} to {{ item }}"
+  with_items: "{{ ansible_interfaces | reject('search', 'lo') }}"
   notify: save_iptables_rules
 
 - name: Allow dns tcp access from wg
