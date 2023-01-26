@@ -1,12 +1,9 @@
 ---
 skip_list:
-  - meta-incorrect
-  - meta-no-info
-  - role-name
-  - namespace
-  - command-instead-of-shell
-  - command-instead-of-module
-  - package-latest
+  - name[casing]
+  - name[template]
+  - key-order[task]
+  - name[missing]
   - fqcn-builtins
 
 warn_list:
@@ -17,3 +14,16 @@ warn_list:
   - ignore-errors
   - empty-string-compare
   - var-naming
+  - jinja[spacing]
+  - meta-incorrect
+  - meta-no-info
+  - role-name
+  - namespace
+  - command-instead-of-shell
+  - command-instead-of-module
+  - package-latest
+  - load-failure
+  - yaml[line-length]
+
+exclude_paths:
+  - "*/molecule/*"
