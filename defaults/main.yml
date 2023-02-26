@@ -8,4 +8,4 @@ wg_isolate_clients: true
 wg_force_update: false
 
 # docker compose required
-wg_deploy_exporter: true
+wg_deploy_exporter: false
