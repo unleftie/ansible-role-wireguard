@@ -18,10 +18,10 @@
 
 ## Role dependencies
 
-- iptables `(required)`
-- iptables persistent `(recomended)`
-- docker compose (see [prometheus_wireguard_exporter](https://github.com/MindFlavor/prometheus_wireguard_exporter)) `(recomended)`
-- prometheus (see [prometheus_wireguard_exporter](https://github.com/MindFlavor/prometheus_wireguard_exporter)) `(recomended)`
+- iptables `required`
+- iptables persistent `required`
+- docker compose (see [prometheus_wireguard_exporter](https://github.com/MindFlavor/prometheus_wireguard_exporter)) `optional`
+- prometheus (see [prometheus_wireguard_exporter](https://github.com/MindFlavor/prometheus_wireguard_exporter)) `optional`
 
 ## Testing
 
