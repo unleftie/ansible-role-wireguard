@@ -10,6 +10,12 @@
     - "/etc/wireguard/{{ wg_interface }}-files"
     - "/etc/wireguard/{{ wg_interface }}-files/clients"
 
+- name: Ensure /etc/network/interfaces.d directory exists
+  file:
+    path: "/etc/network/interfaces.d"
+    state: directory
+    mode: "0755"
+
 - name: Generate server private key
   shell: "wg genkey > /etc/wireguard/{{ wg_interface }}-files/server.key"
   args:
