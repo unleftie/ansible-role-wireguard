@@ -10,10 +10,15 @@
         update_cache: true
         cache_valid_time: 3600
       when: ansible_os_family == "Debian"
+    - name: Ensure dependencies are installed
+      block:
+        - name: Ensure iproute is installed
+          package:
+            name: iproute
+            state: present
+        - name: Gather ansible_default_ipv4 variable
+          setup:
+      when: ansible_os_family == "RedHat"
   tasks:
-    # - include_role:
-    #     name: "zsh"
-    # - include_role:
-    #     name: "docker"
     - include_role:
-        name: "wireguard"
+        name: "ansible-role-wireguard"
