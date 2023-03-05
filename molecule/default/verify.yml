@@ -23,7 +23,7 @@
     - block:
         - name: Get latest Goss release
           uri:
-            url: "https://api.github.com/repos/aelsabbahy/goss/releases/latest"
+            url: "https://${GHA_TOKEN}@api.github.com/repos/aelsabbahy/goss/releases/latest"
             method: GET
             return_content: true
             status_code: 200
