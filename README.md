@@ -1,7 +1,6 @@
 # Role for Wireguard setup
 
-[![Ansible CI](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/ansible-ci.yml/badge.svg)](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/ansible-ci.yml)
-[![Checkmarx KICS](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/checkmarx-kics.yml/badge.svg)](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/checkmarx-kics.yml)
+[![CI](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/ci.yml/badge.svg)](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/ci.yml)
 
 ## Compatibility
 
@@ -28,7 +27,6 @@
 ```sh
 git clone https://github.com/unleftie/ansible-role-wireguard.git
 cd ansible-role-wireguard/
-ansible-galaxy collection install -r requirements.yml
 molecule test
 ```
 
