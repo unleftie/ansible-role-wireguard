@@ -1,4 +1,4 @@
-# Role for Wireguard setup
+# Role for Wireguard VPN setup
 
 [![CI](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/ci.yml/badge.svg)](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/ci.yml)
 
