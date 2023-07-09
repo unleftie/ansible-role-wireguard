@@ -5,6 +5,7 @@
     cache_valid_time: 3600
   register: _download_package
   until: _download_package is succeeded
+  delay: 5
   retries: 5
   when: ansible_os_family == "Debian"
 
@@ -34,6 +35,7 @@
     name: iptables-services
   register: _download_package
   until: _download_package is succeeded
+  delay: 5
   retries: 5
   when: ansible_os_family == "RedHat"
 
@@ -43,6 +45,7 @@
     name: iptables-persistent
   register: _download_package
   until: _download_package is succeeded
+  delay: 5
   retries: 5
   when: ansible_os_family == "Debian"
 
@@ -54,6 +57,7 @@
       - curl
   register: _download_package
   until: _download_package is succeeded
+  delay: 5
   retries: 5
 
 - name: Ensure wireguard is installed
@@ -62,4 +66,5 @@
     name: wireguard
   register: _download_package
   until: _download_package is succeeded
+  delay: 5
   retries: 5

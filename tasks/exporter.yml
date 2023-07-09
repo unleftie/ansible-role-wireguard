@@ -19,6 +19,9 @@
   check_mode: true
   changed_when: false
   register: _docker_package_check
+  until: _docker_package_check is succeeded
+  delay: 5
+  retries: 5
 
 - name: Check docker service status
   systemd:
