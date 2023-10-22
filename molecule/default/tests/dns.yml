@@ -7,4 +7,3 @@ dns:
     timeout: 500
   A:google.com:
     resolvable: true
-    server: 1.1.1.1
