@@ -8,7 +8,6 @@
 | Platform | Version |
 | -------- | ------- |
 | debian   | 12      |
-| ubuntu   | 22.04   |
 
 ## Dependencies
 
@@ -22,12 +21,6 @@
 - iptables persistent `required`
 - docker compose (see [prometheus_wireguard_exporter](https://github.com/MindFlavor/prometheus_wireguard_exporter)) `optional`
 - prometheus (see [prometheus_wireguard_exporter](https://github.com/MindFlavor/prometheus_wireguard_exporter)) `optional`
-
-## Repository secrets
-
-| Variable  | Description                                            | Value  |
-| --------- | ------------------------------------------------------ | ------ |
-| GHA_TOKEN | Github Token with public repositories read-only access | string |
 
 ## Local Testing
 
