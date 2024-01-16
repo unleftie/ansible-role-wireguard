@@ -1,7 +1,7 @@
 # Role for Wireguard VPN setup
 
-[![CI](https://github.com/denysrondaliev/ansible-role-wireguard/actions/workflows/ci.yml/badge.svg)](https://github.com/denysrondaliev/ansible-role-wireguard/actions/workflows/ci.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/denysrondaliev/ansible-role-wireguard/badge)](https://securityscorecards.dev/viewer/?uri=github.com/denysrondaliev/ansible-role-wireguard)
+[![CI](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/ci.yml/badge.svg)](https://github.com/unleftie/ansible-role-wireguard/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/unleftie/ansible-role-wireguard/badge)](https://securityscorecards.dev/viewer/?uri=github.com/unleftie/ansible-role-wireguard)
 
 ## Compatibility
 
@@ -25,7 +25,7 @@
 ## Local Testing
 
 ```sh
-git clone https://github.com/denysrondaliev/ansible-role-wireguard.git
+git clone https://github.com/unleftie/ansible-role-wireguard.git
 cd ansible-role-wireguard/
 molecule test
 ```

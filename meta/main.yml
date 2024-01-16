@@ -3,7 +3,7 @@ dependencies: []
 
 galaxy_info:
   role_name: wireguard
-  author: denysrondaliev
+  author: unleftie
   description: Role for Wireguard VPN setup
   company: ""
   license: "license (MIT)"
