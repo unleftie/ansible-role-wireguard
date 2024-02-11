@@ -1,28 +1,7 @@
 ---
-- name: Enable IPv4 traffic forwarding
-  sysctl:
-    name: net.ipv4.ip_forward
-    value: 1
-    sysctl_set: true
-    state: present
-    reload: true
-
-- name: Enable iptables service
-  systemd:
-    name: iptables
-    state: started
-    enabled: true
-  when: ansible_os_family == "RedHat"
-
-- name: Enable netfilter-persistent (iptables) service
-  systemd:
-    name: netfilter-persistent
-    state: started
-    enabled: true
-  when: ansible_os_family == "Debian"
-
 - name: Allow input to wg interface from external
   iptables:
+    ip_version: "ipv6"
     chain: INPUT
     destination_port: "{{ wg_port }}"
     ctstate: NEW,ESTABLISHED
@@ -32,8 +11,9 @@
     comment: "wg from external"
   notify: save_iptables_rules
 
-- name: Allow forwarding (1/2)
+- name: Allow forwarding (1/2) (ipv6)
   iptables:
+    ip_version: "ipv6"
     chain: FORWARD
     in_interface: "{{ item }}"
     out_interface: "{{ wg_interface }}"
@@ -43,8 +23,9 @@
   with_items: "{{ ansible_interfaces | reject('search', 'lo') }}"
   notify: save_iptables_rules
 
-- name: Allow forwarding (2/2)
+- name: Allow forwarding (2/2) (ipv6)
   iptables:
+    ip_version: "ipv6"
     chain: FORWARD
     in_interface: "{{ wg_interface }}"
     out_interface: "{{ item }}"
@@ -54,11 +35,12 @@
   with_items: "{{ ansible_interfaces | reject('search', 'lo') }}"
   notify: save_iptables_rules
 
-- name: Allow dns tcp access from wg
+- name: Allow dns tcp access from wg (ipv6)
   iptables:
+    ip_version: "ipv6"
     chain: INPUT
     in_interface: "{{ wg_interface }}"
-    source: "{{ wg_ip_pool }}"
+    source: "{{ wg_ipv6_pool }}"
     destination_port: "53"
     protocol: tcp
     jump: ACCEPT
@@ -66,11 +48,12 @@
     comment: "dns tcp access from {{ wg_interface }}"
   notify: save_iptables_rules
 
-- name: Allow dns udp access from wg
+- name: Allow dns udp access from wg (ipv6)
   iptables:
+    ip_version: "ipv6"
     chain: INPUT
     in_interface: "{{ wg_interface }}"
-    source: "{{ wg_ip_pool }}"
+    source: "{{ wg_ipv6_pool }}"
     destination_port: "53"
     protocol: udp
     jump: ACCEPT
@@ -78,31 +61,34 @@
     comment: "dns udp access from {{ wg_interface }}"
   notify: save_iptables_rules
 
-- name: Allow NAT
+- name: Allow NAT (ipv6)
   iptables:
+    ip_version: "ipv6"
     chain: POSTROUTING
     table: nat
-    source: "{{ wg_ip_pool }}"
+    source: "{{ wg_ipv6_pool }}"
     jump: MASQUERADE
     state: present
     comment: "wg nat"
   notify: save_iptables_rules
 
-- name: Allow client-to-client communication
+- name: Allow client-to-client communication (ipv6)
   block:
     - name: Remove client-to-client isolation rule
       iptables:
+        ip_version: "ipv6"
         chain: FORWARD
         in_interface: "{{ wg_interface }}"
         out_interface: "{{ wg_interface }}"
         ctstate: NEW
         jump: REJECT
-        reject_with: "icmp-net-prohibited"
+        reject_with: "icmp6-adm-prohibited"
         state: absent
         comment: "wg clients isolation"
 
-    - name: Add client-to-client communication rule
+    - name: Add client-to-client communication rule (ipv6)
       iptables:
+        ip_version: "ipv6"
         chain: FORWARD
         in_interface: "{{ wg_interface }}"
         out_interface: "{{ wg_interface }}"
@@ -113,10 +99,11 @@
   when: not wg_isolate_clients
   notify: save_iptables_rules
 
-- name: Isolate client-to-client communication
+- name: Isolate client-to-client communication (ipv6)
   block:
     - name: Remove client-to-client communication rule
       iptables:
+        ip_version: "ipv6"
         chain: FORWARD
         in_interface: "{{ wg_interface }}"
         out_interface: "{{ wg_interface }}"
@@ -125,14 +112,15 @@
         state: absent
         comment: "wg client-to-client communication"
 
-    - name: Add client-to-client isolation rule
+    - name: Add client-to-client isolation rule (ipv6)
       iptables:
+        ip_version: "ipv6"
         chain: FORWARD
         in_interface: "{{ wg_interface }}"
         out_interface: "{{ wg_interface }}"
         ctstate: NEW
         jump: REJECT
-        reject_with: "icmp-net-prohibited"
+        reject_with: "icmp6-adm-prohibited"
         state: present
         comment: "wg clients isolation"
   when: wg_isolate_clients | bool

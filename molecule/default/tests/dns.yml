@@ -7,3 +7,8 @@ dns:
     timeout: 500
   A:google.com:
     resolvable: true
+{% if wg_ipv6_support %}
+  AAAA:google.com:
+    resolvable: true
+{% endif %}
+

@@ -1,7 +1,12 @@
 ---
+wg_ipv6_support: true
+wg_ipv6_cidr: 96
+wg_short_ipv6_pool_part: "fd06:6969:6969:abbc::"
+
+wg_ipv4_cidr: 24
+wg_short_ipv4_pool_part: "10.100.100"
+
 wg_port: 10100
-wg_short_ip_pool_part: 10.100.100
-wg_cidr: 24
 
 wg_isolate_clients: true
 

@@ -50,19 +50,24 @@ function confirm() {
 
 function configure_variables() {
     HOSTNAME=$(hostname)
-    NIC=$(ip -o -4 route show to default | awk '{print $5}' | head -n 1)
+    # NIC=$(ip -o -4 route show to default | awk '{print $5}' | head -n 1)
     WG_PORT="{{ wg_port }}"
     WG_INTERFACE="{{ wg_interface }}"
-    WG_SHORT_IP_POOL_PART="{{ wg_short_ip_pool_part }}"
-    INTERNAL_IP=$(hostname -I | awk '{print $1}')
+    WG_SHORT_IPV4_POOL_PART="{{ wg_short_ipv4_pool_part }}"
+    WG_SHORT_IPV6_POOL_PART="{{ wg_short_ipv6_pool_part }}"
+    WG_IPV4_CIDR="{{ wg_ipv4_cidr }}"
+    WG_IPV6_CIDR="{{ wg_ipv6_cidr }}"
+    INTERNAL_IP=$(hostname -I | awk '{print $1}') # FIXME
 
     MAIN_DIRECTORY_PATH="/etc/wireguard/$WG_INTERFACE-files"
 
-    SERVER_ENDPOINT=$(curl -s checkip.amazonaws.com || curl -s ident.me)
+    SERVER_ENDPOINT_IPV4=$(curl -4 -s ident.me)
+    SERVER_ENDPOINT_IPV6=$(curl -6 -s ident.me)
     SERVER_PUB_KEY_PATH="$MAIN_DIRECTORY_PATH/server-pub.key"
     SERVER_CONFIG_PATH="$MAIN_DIRECTORY_PATH/$WG_INTERFACE.conf"
 
-    CLIENT_ALLOWED_IP_POOL=${INTERNAL_IP%.*}.0/24
+    CLIENT_ALLOWED_IP_POOL=${INTERNAL_IP%.*}.0/24    # FIXME
+    CLIENT_ALLOWED_IP_POOL_V6=${INTERNAL_IP%:*}::/64 # FIXME
 }
 
 function pre_input_checks() {
@@ -99,37 +104,39 @@ function generate_client_secrets() {
 }
 
 function generate_client_config() {
-    [[ $EXTERNAL_ACCESS == "true" ]] && CLIENT_ALLOWED_IP_POOL="0.0.0.0/0"
-    [[ $INTERNAL_DNS == "true" ]] && CLIENT_DNS="$WG_SHORT_IP_POOL_PART.1" || CLIENT_DNS="1.1.1.2,9.9.9.9"
-    CLIENT_CONFIG_PATH="$MAIN_DIRECTORY_PATH/clients/$CLIENT_NAME.conf"
+    [[ $EXTERNAL_ACCESS == "true" ]] && CLIENT_ALLOWED_IP_POOL="0.0.0.0/0,::0"
+    [[ $INTERNAL_DNS == "true" ]] && CLIENT_DNS="${WG_SHORT_IPV4_POOL_PART}.1,${WG_SHORT_IPV6_POOL_PART}1" ||
+        CLIENT_DNS="1.1.1.2,9.9.9.9,2606:4700:4700::1112,2620:fe::fe"
+    CLIENT_CONFIG_PATH="${MAIN_DIRECTORY_PATH}/clients/${CLIENT_NAME}.conf"
 
     echo "
     [Peer]
     # friendly_name = $CLIENT_NAME
     PublicKey = $CLIENT_PUB_KEY
     PresharedKey = $CLIENT_PSK
-    AllowedIPs = $WG_SHORT_IP_POOL_PART.$OCTET_COUNT/32
+    AllowedIPs = ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/32,${WG_SHORT_IPV6_POOL_PART}${OCTET_COUNT}/128
     PersistentKeepalive = 30" | sed 's/^[ \t]*//' >>$SERVER_CONFIG_PATH
 
     echo "# config for client $CLIENT_NAME
     [Interface]
     PrivateKey = $CLIENT_KEY
-    Address = $WG_SHORT_IP_POOL_PART.$OCTET_COUNT/24
+    Address = ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/${WG_IPV4_CIDR},${WG_SHORT_IPV6_POOL_PART}${OCTET_COUNT}/${WG_IPV6_CIDR}
     DNS = $CLIENT_DNS
 
     [Peer]
     PublicKey = SERVER_PUB_KEY
     PresharedKey = $CLIENT_PSK
-    Endpoint = $SERVER_ENDPOINT:$WG_PORT
+    Endpoint = ${SERVER_ENDPOINT_IPV4}:$WG_PORT
+    Endpoint = [${SERVER_ENDPOINT_IPV6}]:$WG_PORT
     AllowedIPs = $CLIENT_ALLOWED_IP_POOL" | sed 's/^[ \t]*//' >$CLIENT_CONFIG_PATH
 
-    sed -i "s,SERVER_PUB_KEY,$(cat $SERVER_PUB_KEY_PATH),g" $CLIENT_CONFIG_PATH
+    sed -i "s,SERVER_PUB_KEY,$(cat ${SERVER_PUB_KEY_PATH}),g" $CLIENT_CONFIG_PATH
 }
 
 function check_permissions() {
     WG_USERNAME=$(stat -c '%U' $MAIN_DIRECTORY_PATH/clients)
     WG_GROUP=$(stat -c '%G' $MAIN_DIRECTORY_PATH/clients)
-    chown $WG_USERNAME:$WG_GROUP $CLIENT_CONFIG_PATH
+    chown ${WG_USERNAME}:${WG_GROUP} $CLIENT_CONFIG_PATH
     chmod 600 $CLIENT_CONFIG_PATH
 }
 
@@ -139,7 +146,7 @@ function interface_reload() {
 
 function firewall() {
     if [[ $SERVER_ACCESS == "true" ]]; then
-        iptables -A INPUT -s $WG_SHORT_IP_POOL_PART.$OCTET_COUNT/32 -i $WG_INTERFACE -m comment --comment "server access from $WG_INTERFACE" -j ACCEPT
+        iptables -A INPUT -s ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/32 -i $WG_INTERFACE -m comment --comment "server access from $WG_INTERFACE" -j ACCEPT
         iptables-save >/etc/iptables/rules.v4
     fi
 }
@@ -147,7 +154,7 @@ function firewall() {
 function print_config() {
     echo -e "\nClient config path: $CLIENT_CONFIG_PATH"
     echo -e "\nClient config QR code:\n"
-    cat $CLIENT_CONFIG_PATH | qrencode -t ansiutf8
+    cat "$CLIENT_CONFIG_PATH" | qrencode -t ansiutf8
 }
 
 (print_success "configure variables" && configure_variables) || print_error "configure variables"

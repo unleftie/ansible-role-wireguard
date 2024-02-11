@@ -28,8 +28,11 @@ interface:
   {{ wg_interface }}:
     exists: true
     addrs:
-      - "{{ wg_interface_address }}"
-    mtu: 1420
+      - "{{ wg_ipv4_interface_address }}"
+{% if wg_ipv6_support %}
+      - "{{ wg_ipv6_interface_address }}"
+{% endif %}
+
 file:
   /etc/network/interfaces.d/{{ wg_interface }}:
     exists: true
@@ -38,7 +41,13 @@ file:
     group: root
     filetype: file
     contains:
-      ["address", "iface", "{{ wg_interface }}", "{{ wg_interface_address }}"]
+      - "address"
+      - "iface"
+      - "{{ wg_interface }}"
+      - "{{ wg_ipv4_interface_address }}"
+{% if wg_ipv6_support %}
+      - "{{ wg_ipv6_interface_address }}"
+{% endif %}
   {{ wg_server_config_path }}:
     exists: true
     mode: "0640"
@@ -50,7 +59,10 @@ file:
         "ListenPort",
         "PrivateKey",
         "SaveConfig = false",
-        "{{ wg_interface_address }}",
+        "{{ wg_ipv4_interface_address }}",
+{% if wg_ipv6_support %}
+        "{{ wg_ipv6_interface_address }}",
+{% endif %}
       ]
 http:
   http://127.0.0.1:9586/metrics:

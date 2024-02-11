@@ -1,5 +1,5 @@
 [Interface]
 PrivateKey = {{ server_private_key.stdout }}
-Address = {{ wg_interface_address }}
+Address = {{ wg_ipv4_interface_address }}{{ ',' + wg_ipv6_interface_address if wg_ipv6_support|bool else '' }}
 ListenPort = {{ wg_port }}
 SaveConfig = false

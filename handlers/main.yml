@@ -5,18 +5,34 @@
     state: restarted
     enabled: true
 
-- name: save_iptables_rules
+- name: save_iptables_ipv4_rules
   community.general.iptables_state:
     ip_version: "ipv4"
     state: saved
     path: "/etc/sysconfig/iptables"
-  when: ansible_os_family == "RedHat"
   listen: save_iptables_rules
+  when: ansible_os_family == "RedHat"
 
-- name: save_iptables_rules
+- name: save_iptables_ipv6_rules
+  community.general.iptables_state:
+    ip_version: "ipv6"
+    state: saved
+    path: "/etc/sysconfig/ip6tables"
+  listen: save_iptables_rules
+  when: ansible_os_family == "RedHat"
+
+- name: save_iptables_ipv4_rules
   community.general.iptables_state:
     ip_version: "ipv4"
     state: saved
     path: "/etc/iptables/rules.v4"
-  when: ansible_os_family == "Debian"
   listen: save_iptables_rules
+  when: ansible_os_family == "Debian"
+
+- name: save_iptables_ipv6_rules
+  community.general.iptables_state:
+    ip_version: "ipv6"
+    state: saved
+    path: "/etc/iptables/rules.v6"
+  listen: save_iptables_rules
+  when: ansible_os_family == "Debian"
