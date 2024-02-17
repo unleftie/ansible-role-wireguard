@@ -1,11 +1,21 @@
 ---
-- name: Generate script to add new clients
+- name: Generate script to add new clients (IPv4 only)
   template:
-    src: "add-client.sh"
+    src: "add-client-ipv4.sh"
     dest: "/etc/wireguard/{{ wg_interface }}-files/add-client.sh"
     owner: "{{ wg_system_user }}"
     group: "{{ wg_system_group }}"
     mode: "0700"
+  when: not wg_ipv6_support
+
+- name: Generate script to add new clients (IPv4 + IPv6)
+  template:
+    src: "add-client-ipv4-and-ipv6.sh"
+    dest: "/etc/wireguard/{{ wg_interface }}-files/add-client.sh"
+    owner: "{{ wg_system_user }}"
+    group: "{{ wg_system_group }}"
+    mode: "0700"
+  when: wg_ipv6_support | bool
 
 # for systemd unit
 - name: Create a symbolic link

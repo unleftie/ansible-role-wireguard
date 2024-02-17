@@ -48,6 +48,74 @@ function confirm() {
     done
 }
 
+function check_ipv4() {
+    # Get all IPv4 addresses assigned to the instance
+    ipv4_addresses=$(ip addr show | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b')
+
+    # Filter out private IPv4 addresses (RFC 1918)
+    private_ipv4=()
+    for addr in $ipv4_addresses; do
+        if [[ $addr =~ ^((10|172\.(1[6-9]|2[0-9]|3[0-1])|192\.168)\.) ]]; then
+            private_ipv4+=("$addr/24")
+        fi
+    done
+
+    # Return the pool of private IPv4 addresses
+    echo "${private_ipv4[@]}"
+}
+
+function check_ipv6() {
+    # Get all IPv6 addresses assigned to the instance
+    ipv6_addresses=$(ip addr show | grep -oE '\b([0-9a-fA-F]{1,4}::?){1,7}[0-9a-fA-F]{1,4}\b')
+
+    # Filter out private IPv6 addresses (RFC 4193)
+    private_ipv6=()
+    for addr in $ipv6_addresses; do
+        if [[ $addr =~ ^[fcd][0-9a-f]{2} ]]; then
+            private_ipv6+=("$addr/96")
+        fi
+    done
+
+    # Return the pool of private IPv6 addresses
+    echo "${private_ipv6[@]}"
+}
+
+function select_ipv4() {
+    echo "Select the pool of IPv4 addresses to which the client will have access:"
+    select ip in $(check_ipv4); do
+        if [[ -n "$ip" ]]; then
+            echo "Selected IPv4 address pool: $ip"
+            echo "$ip" >./selected_ipv4_addresses
+            break
+        fi
+    done
+}
+
+function select_ipv6() {
+    echo "Select the pool of IPv6 addresses to which the client will have access:"
+    select ip in $(check_ipv6); do
+        if [[ -n "$ip" ]]; then
+            echo "Selected IPv6 address pool: $ip"
+            echo "$ip" >./selected_ipv6_addresses
+            break
+        fi
+    done
+}
+
+select_addresses() {
+    # Check if the files already exist
+    if [ -f "./selected_ipv4_addresses" ] && [ -f "./selected_ipv6_addresses" ]; then
+        echo "Selected addresses already exist. Skipping."
+        return
+    fi
+
+    select_ipv4
+    select_ipv6
+}
+
+# Call the main function
+select_addresses
+
 function configure_variables() {
     HOSTNAME=$(hostname)
     # NIC=$(ip -o -4 route show to default | awk '{print $5}' | head -n 1)
@@ -57,7 +125,6 @@ function configure_variables() {
     WG_SHORT_IPV6_POOL_PART="{{ wg_short_ipv6_pool_part }}"
     WG_IPV4_CIDR="{{ wg_ipv4_cidr }}"
     WG_IPV6_CIDR="{{ wg_ipv6_cidr }}"
-    INTERNAL_IP=$(hostname -I | awk '{print $1}') # FIXME
 
     MAIN_DIRECTORY_PATH="/etc/wireguard/$WG_INTERFACE-files"
 
@@ -65,9 +132,6 @@ function configure_variables() {
     SERVER_ENDPOINT_IPV6=$(curl -6 -s ident.me)
     SERVER_PUB_KEY_PATH="$MAIN_DIRECTORY_PATH/server-pub.key"
     SERVER_CONFIG_PATH="$MAIN_DIRECTORY_PATH/$WG_INTERFACE.conf"
-
-    CLIENT_ALLOWED_IP_POOL=${INTERNAL_IP%.*}.0/24    # FIXME
-    CLIENT_ALLOWED_IP_POOL_V6=${INTERNAL_IP%:*}::/64 # FIXME
 }
 
 function pre_input_checks() {
@@ -79,6 +143,7 @@ function pre_input_checks() {
 }
 
 function input() {
+    select_addresses
     [ -z "$CLIENT_NAME" ] && get_input "Client name: " CLIENT_NAME
     [[ "$CLIENT_NAME" == "" ]] && print_error "'Client name' value cannot be blank"
     [ "${CLIENT_NAME//[A-Za-z0-9_]/}" ] && print_error "Valid characters for 'client name' value are 'A-Z', 'a-z', '0-9' and '_'"
@@ -104,9 +169,10 @@ function generate_client_secrets() {
 }
 
 function generate_client_config() {
-    [[ $EXTERNAL_ACCESS == "true" ]] && CLIENT_ALLOWED_IP_POOL="0.0.0.0/0,::0"
-    [[ $INTERNAL_DNS == "true" ]] && CLIENT_DNS="${WG_SHORT_IPV4_POOL_PART}.1,${WG_SHORT_IPV6_POOL_PART}1" ||
-        CLIENT_DNS="1.1.1.2,9.9.9.9,2606:4700:4700::1112,2620:fe::fe"
+    CLIENT_ALLOWED_IPV4_POOL=$(cat ./selected_ipv4_addresses) && CLIENT_ALLOWED_IPV6_POOL=$(cat ./selected_ipv6_addresses)
+    [[ $EXTERNAL_ACCESS == "true" ]] && CLIENT_ALLOWED_IPV4_POOL="0.0.0.0/0" && CLIENT_ALLOWED_IPV6_POOL="::0"
+    [[ $INTERNAL_DNS == "true" ]] && CLIENT_DNS_IPV4="${WG_SHORT_IPV4_POOL_PART}.1" && CLIENT_DNS_IPV6="${WG_SHORT_IPV6_POOL_PART}1" ||
+        CLIENT_DNS_IPV4="1.1.1.2,9.9.9.9" && CLIENT_DNS_IPV6="2606:4700:4700::1112,2620:fe::fe"
     CLIENT_CONFIG_PATH="${MAIN_DIRECTORY_PATH}/clients/${CLIENT_NAME}.conf"
 
     echo "
@@ -114,21 +180,25 @@ function generate_client_config() {
     # friendly_name = $CLIENT_NAME
     PublicKey = $CLIENT_PUB_KEY
     PresharedKey = $CLIENT_PSK
-    AllowedIPs = ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/32,${WG_SHORT_IPV6_POOL_PART}${OCTET_COUNT}/128
+    AllowedIPs = ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/32
+    AllowedIPs = ${WG_SHORT_IPV6_POOL_PART}${OCTET_COUNT}/128
     PersistentKeepalive = 30" | sed 's/^[ \t]*//' >>$SERVER_CONFIG_PATH
 
     echo "# config for client $CLIENT_NAME
     [Interface]
     PrivateKey = $CLIENT_KEY
-    Address = ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/${WG_IPV4_CIDR},${WG_SHORT_IPV6_POOL_PART}${OCTET_COUNT}/${WG_IPV6_CIDR}
-    DNS = $CLIENT_DNS
+    Address = ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/${WG_IPV4_CIDR}
+    Address = ${WG_SHORT_IPV6_POOL_PART}${OCTET_COUNT}/${WG_IPV6_CIDR}
+    DNS = $CLIENT_DNS_IPV4
+    DNS = $CLIENT_DNS_IPV6
 
     [Peer]
     PublicKey = SERVER_PUB_KEY
     PresharedKey = $CLIENT_PSK
     Endpoint = ${SERVER_ENDPOINT_IPV4}:$WG_PORT
     Endpoint = [${SERVER_ENDPOINT_IPV6}]:$WG_PORT
-    AllowedIPs = $CLIENT_ALLOWED_IP_POOL" | sed 's/^[ \t]*//' >$CLIENT_CONFIG_PATH
+    AllowedIPs = $CLIENT_ALLOWED_IPV4_POOL
+    AllowedIPs = $CLIENT_ALLOWED_IPV6_POOL" | sed 's/^[ \t]*//' >$CLIENT_CONFIG_PATH
 
     sed -i "s,SERVER_PUB_KEY,$(cat ${SERVER_PUB_KEY_PATH}),g" $CLIENT_CONFIG_PATH
 }
