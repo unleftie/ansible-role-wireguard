@@ -32,7 +32,7 @@
     jump: ACCEPT
     state: present
     comment: "wg forward from {{ item }} to {{ wg_interface }}"
-  with_items: "{{ ansible_interfaces | reject('search', 'lo') }}"
+  with_items: "{{ ansible_interfaces | reject('search', 'lo') | reject('search', '{{ wg_interface }}') }}"
   notify: save_iptables_rules
 
 - name: Allow forwarding (2/2)
@@ -43,7 +43,7 @@
     jump: ACCEPT
     state: present
     comment: "wg forward from {{ wg_interface }} to {{ item }}"
-  with_items: "{{ ansible_interfaces | reject('search', 'lo') }}"
+  with_items: "{{ ansible_interfaces | reject('search', 'lo') | reject('search', '{{ wg_interface }}') }}"
   notify: save_iptables_rules
 
 - name: Allow dns tcp access from wg
