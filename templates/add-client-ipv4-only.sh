@@ -1,5 +1,5 @@
 #! /bin/bash
-# version: 3.3
+# version: 4.0
 
 set -o pipefail
 
@@ -16,21 +16,23 @@ function print_success() {
     printf '%s# %s%s\n' "$(printf '\033[32m')" "$*" "$(printf '\033[m')" >&2
 }
 
+function print_warning() {
+    printf '%sWARNING: %s%s\n' "$(printf '\033[31m')" "$*" "$(printf '\033[m')" >&2
+}
+
 function print_error() {
     printf '%sERROR: %s%s\n' "$(printf '\033[31m')" "$*" "$(printf '\033[m')" >&2
     exit 1
 }
 
 function get_input() {
-    [[ $ZSH_VERSION ]] && read "$2"\?"$1"
-    [[ $BASH_VERSION ]] && read -p "$1" "$2"
+    read -rp "$1" "$2"
 }
 
 function get_keypress() {
     local REPLY IFS=
     printf >/dev/tty '%s' "$*"
-    [[ $ZSH_VERSION ]] && read -rk1
-    [[ $BASH_VERSION ]] && read </dev/tty -rn1
+    read </dev/tty -rn1
     printf '%s' "$REPLY"
 }
 
@@ -48,21 +50,58 @@ function confirm() {
     done
 }
 
+function check_ipv4() {
+    # Get all IPv4 addresses assigned to the instance
+    ipv4_addresses=$(ip addr show | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b')
+
+    # Filter out private IPv4 addresses (RFC 1918)
+    private_ipv4=()
+    for addr in $ipv4_addresses; do
+        if [[ $addr =~ ^((10|172\.(1[6-9]|2[0-9]|3[0-1])|192\.168)\.) ]]; then
+            # Replace the last octet with 0
+            addr=$(echo $addr | sed 's/\.[0-9]\{1,3\}$/\.0/')
+            private_ipv4+=("$addr/24")
+        fi
+    done
+
+    # Return the pool of private IPv4 addresses
+    echo "${private_ipv4[@]}"
+}
+
+function select_ipv4_pool() {
+    echo "Select the pool of IPv4 addresses to which the client will have access (if EXTERNAL_ACCESS is disabled):"
+    select ip in $(check_ipv4); do
+        if [[ -n "$ip" ]]; then
+            echo -e "Selected IPv4 address pool: $ip\n"
+            echo "$ip" >$MAIN_DIRECTORY_PATH/allowed_ipv4_pool.txt
+            chown ${WG_USERNAME}:${WG_GROUP} $MAIN_DIRECTORY_PATH/allowed_ipv4_pool.txt
+            chmod 600 $MAIN_DIRECTORY_PATH/allowed_ipv4_pool.txt
+            break
+        fi
+    done
+}
+
+select_addresses() {
+    # check if the files with addresses already exist
+    if [ -f "$MAIN_DIRECTORY_PATH/allowed_ipv4_pool.txt" ]; then
+        return
+    fi
+
+    select_ipv4_pool
+}
+
 function configure_variables() {
-    HOSTNAME=$(hostname)
-    NIC=$(ip -o -4 route show to default | awk '{print $5}' | head -n 1)
     WG_PORT="{{ wg_port }}"
     WG_INTERFACE="{{ wg_interface }}"
-    WG_SHORT_IP_POOL_PART="{{ wg_short_ip_pool_part }}"
-    INTERNAL_IP=$(hostname -I | awk '{print $1}')
+    WG_SHORT_IPV4_POOL_PART="{{ wg_short_ipv4_pool_part }}"
+    WG_IPV4_CIDR="{{ wg_ipv4_cidr }}"
+    WG_USERNAME="{{ wg_system_user }}"
+    WG_GROUP="{{ wg_system_group }}"
+    MAIN_DIRECTORY_PATH="/etc/wireguard/{{ wg_interface }}-files"
 
-    MAIN_DIRECTORY_PATH="/etc/wireguard/$WG_INTERFACE-files"
-
-    SERVER_ENDPOINT=$(curl -s checkip.amazonaws.com || curl -s ident.me)
+    SERVER_ENDPOINT_IPV4=$(curl -4 -s ident.me)
     SERVER_PUB_KEY_PATH="$MAIN_DIRECTORY_PATH/server-pub.key"
-    SERVER_CONFIG_PATH="$MAIN_DIRECTORY_PATH/$WG_INTERFACE.conf"
-
-    CLIENT_ALLOWED_IP_POOL=${INTERNAL_IP%.*}.0/24
+    SERVER_CONFIG_PATH="$MAIN_DIRECTORY_PATH/{{ wg_interface }}.conf"
 }
 
 function pre_input_checks() {
@@ -74,6 +113,7 @@ function pre_input_checks() {
 }
 
 function input() {
+    select_addresses
     [ -z "$CLIENT_NAME" ] && get_input "Client name: " CLIENT_NAME
     [[ "$CLIENT_NAME" == "" ]] && print_error "'Client name' value cannot be blank"
     [ "${CLIENT_NAME//[A-Za-z0-9_]/}" ] && print_error "Valid characters for 'client name' value are 'A-Z', 'a-z', '0-9' and '_'"
@@ -88,8 +128,8 @@ function configure_directories() {
 }
 
 function configure_new_octet() {
-    OCTET_COUNT=$(($(cat $MAIN_DIRECTORY_PATH/octet.count) + 1))
-    echo $OCTET_COUNT >$MAIN_DIRECTORY_PATH/octet.count
+    OCTET_COUNT=$(($(cat ${MAIN_DIRECTORY_PATH}/octet.count) + 1))
+    echo $OCTET_COUNT >${MAIN_DIRECTORY_PATH}/octet.count
 }
 
 function generate_client_secrets() {
@@ -99,55 +139,61 @@ function generate_client_secrets() {
 }
 
 function generate_client_config() {
-    [[ $EXTERNAL_ACCESS == "true" ]] && CLIENT_ALLOWED_IP_POOL="0.0.0.0/0"
-    [[ $INTERNAL_DNS == "true" ]] && CLIENT_DNS="$WG_SHORT_IP_POOL_PART.1" || CLIENT_DNS="1.1.1.1, 8.8.8.8"
-    CLIENT_CONFIG_PATH="$MAIN_DIRECTORY_PATH/clients/$CLIENT_NAME.conf"
+    CLIENT_ALLOWED_IPV4_POOL=$(cat ${MAIN_DIRECTORY_PATH}/allowed_ipv4_pool.txt)
+    [[ $EXTERNAL_ACCESS == "true" ]] && CLIENT_ALLOWED_IPV4_POOL="0.0.0.0/0"
+    if [[ $INTERNAL_DNS == "true" ]]; then
+        CLIENT_DNS_IPV4="${WG_SHORT_IPV4_POOL_PART}.1"
+    else
+        CLIENT_DNS_IPV4="1.1.1.2,9.9.9.9"
+    fi
+
+    CLIENT_CONFIG_PATH="${MAIN_DIRECTORY_PATH}/clients/${CLIENT_NAME}.conf"
 
     echo "
     [Peer]
     # friendly_name = $CLIENT_NAME
     PublicKey = $CLIENT_PUB_KEY
     PresharedKey = $CLIENT_PSK
-    AllowedIPs = $WG_SHORT_IP_POOL_PART.$OCTET_COUNT/32
+    AllowedIPs = ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/32
     PersistentKeepalive = 30" | sed 's/^[ \t]*//' >>$SERVER_CONFIG_PATH
 
     echo "# config for client $CLIENT_NAME
     [Interface]
     PrivateKey = $CLIENT_KEY
-    Address = $WG_SHORT_IP_POOL_PART.$OCTET_COUNT/24
-    DNS = $CLIENT_DNS
+    Address = ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/${WG_IPV4_CIDR}
+    DNS = $CLIENT_DNS_IPV4
 
     [Peer]
     PublicKey = SERVER_PUB_KEY
     PresharedKey = $CLIENT_PSK
-    Endpoint = $SERVER_ENDPOINT:$WG_PORT
-    AllowedIPs = $CLIENT_ALLOWED_IP_POOL" | sed 's/^[ \t]*//' >$CLIENT_CONFIG_PATH
+    # IPv4 Endpoint
+    Endpoint = ${SERVER_ENDPOINT_IPV4}:$WG_PORT
+    AllowedIPs = $CLIENT_ALLOWED_IPV4_POOL" | sed 's/^[ \t]*//' >$CLIENT_CONFIG_PATH
 
-    sed -i "s,SERVER_PUB_KEY,$(cat $SERVER_PUB_KEY_PATH),g" $CLIENT_CONFIG_PATH
+    sed -i "s,SERVER_PUB_KEY,$(cat ${SERVER_PUB_KEY_PATH}),g" $CLIENT_CONFIG_PATH
 }
 
 function check_permissions() {
-    WG_USERNAME=$(stat -c '%U' $MAIN_DIRECTORY_PATH/clients)
-    WG_GROUP=$(stat -c '%G' $MAIN_DIRECTORY_PATH/clients)
-    chown $WG_USERNAME:$WG_GROUP $CLIENT_CONFIG_PATH
+    chown ${WG_USERNAME}:${WG_GROUP} $CLIENT_CONFIG_PATH
     chmod 600 $CLIENT_CONFIG_PATH
 }
 
 function interface_reload() {
-    systemctl reload wg-quick@$WG_INTERFACE
+    systemctl reload wg-quick@${WG_INTERFACE}
 }
 
 function firewall() {
     if [[ $SERVER_ACCESS == "true" ]]; then
-        iptables -A INPUT -s $WG_SHORT_IP_POOL_PART.$OCTET_COUNT/32 -i $WG_INTERFACE -m comment --comment "server access from $WG_INTERFACE" -j ACCEPT
+        iptables -A INPUT -s ${WG_SHORT_IPV4_POOL_PART}.${OCTET_COUNT}/32 -i $WG_INTERFACE -m comment --comment "server access from $WG_INTERFACE" -j ACCEPT
         iptables-save >/etc/iptables/rules.v4
+        print_warning "added iptables rule to access server"
     fi
 }
 
 function print_config() {
     echo -e "\nClient config path: $CLIENT_CONFIG_PATH"
     echo -e "\nClient config QR code:\n"
-    cat $CLIENT_CONFIG_PATH | qrencode -t ansiutf8
+    cat "$CLIENT_CONFIG_PATH" | qrencode -t ansiutf8
 }
 
 print_success "configure variables" && configure_variables || print_error "configure variables"

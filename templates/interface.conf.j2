@@ -1,6 +1,16 @@
+# IPv4 Configuration
 iface {{ wg_interface }} inet static
-    address {{ wg_interface_address }}
+    address {{ wg_ipv4_interface_address }}
     pre-up ip link del {{ wg_interface }}
     pre-up ip link add {{ wg_interface }} type wireguard
     pre-up wg setconf {{ wg_interface }} /etc/wireguard/{{ wg_interface }}-files/{{ wg_interface }}.conf
     post-down ip link del {{ wg_interface }}
+{% if wg_ipv6_support %}
+# IPv6 Configuration
+iface {{ wg_interface }} inet6 static
+    address {{ wg_ipv6_interface_address }}
+    pre-up ip -6 link del {{ wg_interface }}
+    pre-up ip -6 link add {{ wg_interface }} type wireguard
+    pre-up wg setconf {{ wg_interface }} /etc/wireguard/{{ wg_interface }}-files/{{ wg_interface }}.conf
+    post-down ip -6 link del {{ wg_interface }}
+{% endif %}

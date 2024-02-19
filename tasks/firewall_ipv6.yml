@@ -1,0 +1,127 @@
+---
+- name: Allow input to wg interface from external
+  iptables:
+    ip_version: "ipv6"
+    chain: INPUT
+    destination_port: "{{ wg_port }}"
+    ctstate: NEW,ESTABLISHED
+    protocol: udp
+    jump: ACCEPT
+    state: present
+    comment: "wg from external"
+  notify: save_iptables_rules
+
+- name: Allow forwarding (1/2) (ipv6)
+  iptables:
+    ip_version: "ipv6"
+    chain: FORWARD
+    in_interface: "{{ item }}"
+    out_interface: "{{ wg_interface }}"
+    jump: ACCEPT
+    state: present
+    comment: "wg forward from {{ item }} to {{ wg_interface }}"
+  with_items: "{{ ansible_interfaces | reject('search', 'lo') | reject('search', '{{ wg_interface }}') }}"
+  notify: save_iptables_rules
+
+- name: Allow forwarding (2/2) (ipv6)
+  iptables:
+    ip_version: "ipv6"
+    chain: FORWARD
+    in_interface: "{{ wg_interface }}"
+    out_interface: "{{ item }}"
+    jump: ACCEPT
+    state: present
+    comment: "wg forward from {{ wg_interface }} to {{ item }}"
+  with_items: "{{ ansible_interfaces | reject('search', 'lo') | reject('search', '{{ wg_interface }}') }}"
+  notify: save_iptables_rules
+
+- name: Allow dns tcp access from wg (ipv6)
+  iptables:
+    ip_version: "ipv6"
+    chain: INPUT
+    in_interface: "{{ wg_interface }}"
+    source: "{{ wg_ipv6_pool }}"
+    destination_port: "53"
+    protocol: tcp
+    jump: ACCEPT
+    state: present
+    comment: "dns tcp access from {{ wg_interface }}"
+  notify: save_iptables_rules
+
+- name: Allow dns udp access from wg (ipv6)
+  iptables:
+    ip_version: "ipv6"
+    chain: INPUT
+    in_interface: "{{ wg_interface }}"
+    source: "{{ wg_ipv6_pool }}"
+    destination_port: "53"
+    protocol: udp
+    jump: ACCEPT
+    state: present
+    comment: "dns udp access from {{ wg_interface }}"
+  notify: save_iptables_rules
+
+- name: Allow NAT (ipv6)
+  iptables:
+    ip_version: "ipv6"
+    chain: POSTROUTING
+    table: nat
+    source: "{{ wg_ipv6_pool }}"
+    jump: MASQUERADE
+    state: present
+    comment: "wg nat"
+  notify: save_iptables_rules
+
+- name: Allow client-to-client communication (ipv6)
+  block:
+    - name: Remove client-to-client isolation rule
+      iptables:
+        ip_version: "ipv6"
+        chain: FORWARD
+        in_interface: "{{ wg_interface }}"
+        out_interface: "{{ wg_interface }}"
+        ctstate: NEW
+        jump: REJECT
+        reject_with: "icmp6-adm-prohibited"
+        state: absent
+        comment: "wg clients isolation"
+
+    - name: Add client-to-client communication rule (ipv6)
+      iptables:
+        ip_version: "ipv6"
+        chain: FORWARD
+        in_interface: "{{ wg_interface }}"
+        out_interface: "{{ wg_interface }}"
+        ctstate: NEW,ESTABLISHED
+        jump: ACCEPT
+        state: present
+        comment: "wg client-to-client communication"
+  when: not wg_isolate_clients
+  notify: save_iptables_rules
+
+- name: Isolate client-to-client communication (ipv6)
+  block:
+    - name: Remove client-to-client communication rule
+      iptables:
+        ip_version: "ipv6"
+        chain: FORWARD
+        in_interface: "{{ wg_interface }}"
+        out_interface: "{{ wg_interface }}"
+        ctstate: NEW,ESTABLISHED
+        jump: ACCEPT
+        state: absent
+        comment: "wg client-to-client communication"
+
+    - name: Add client-to-client isolation rule (ipv6)
+      iptables:
+        ip_version: "ipv6"
+        chain: FORWARD
+        in_interface: "{{ wg_interface }}"
+        out_interface: "{{ wg_interface }}"
+        ctstate: NEW
+        jump: REJECT
+        reject_with: "icmp6-adm-prohibited"
+        state: present
+        comment: "wg clients isolation"
+  when: wg_isolate_clients | bool
+  notify: save_iptables_rules

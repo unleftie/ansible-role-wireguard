@@ -11,3 +11,28 @@ service:
 command:
   iptables -nL:
     exit-status: 0
+{% if wg_ipv6_support %}
+  ip6tables -nL:
+    exit-status: 0
+{% endif %}
+file:
+{% if ansible_os_family == "RedHat" %}
+  /etc/sysconfig/iptables:
+    exists: true
+    filetype: file
+{% if wg_ipv6_support %}
+  /etc/sysconfig/ip6tables:
+    exists: true
+    filetype: file
+{% endif %}
+{% endif %}
+{% if ansible_os_family == "Debian" %}
+  /etc/iptables/rules.v4:
+    exists: true
+    filetype: file
+{% if wg_ipv6_support %}
+  /etc/iptables/rules.v6:
+    exists: true
+    filetype: file
+{% endif %}
+{% endif %}

@@ -1,12 +1,4 @@
 ---
-- name: Enable IPv4 traffic forwarding
-  sysctl:
-    name: net.ipv4.ip_forward
-    value: 1
-    sysctl_set: true
-    state: present
-    reload: true
-
 - name: Enable iptables service
   systemd:
     name: iptables
@@ -40,7 +32,7 @@
     jump: ACCEPT
     state: present
     comment: "wg forward from {{ item }} to {{ wg_interface }}"
-  with_items: "{{ ansible_interfaces | reject('search', 'lo') }}"
+  with_items: "{{ ansible_interfaces | reject('search', 'lo') | reject('search', '{{ wg_interface }}') }}"
   notify: save_iptables_rules
 
 - name: Allow forwarding (2/2)
@@ -51,14 +43,14 @@
     jump: ACCEPT
     state: present
     comment: "wg forward from {{ wg_interface }} to {{ item }}"
-  with_items: "{{ ansible_interfaces | reject('search', 'lo') }}"
+  with_items: "{{ ansible_interfaces | reject('search', 'lo') | reject('search', '{{ wg_interface }}') }}"
   notify: save_iptables_rules
 
 - name: Allow dns tcp access from wg
   iptables:
     chain: INPUT
     in_interface: "{{ wg_interface }}"
-    source: "{{ wg_ip_pool }}"
+    source: "{{ wg_ipv4_pool }}"
     destination_port: "53"
     protocol: tcp
     jump: ACCEPT
@@ -70,7 +62,7 @@
   iptables:
     chain: INPUT
     in_interface: "{{ wg_interface }}"
-    source: "{{ wg_ip_pool }}"
+    source: "{{ wg_ipv4_pool }}"
     destination_port: "53"
     protocol: udp
     jump: ACCEPT
@@ -82,7 +74,7 @@
   iptables:
     chain: POSTROUTING
     table: nat
-    source: "{{ wg_ip_pool }}"
+    source: "{{ wg_ipv4_pool }}"
     jump: MASQUERADE
     state: present
     comment: "wg nat"
