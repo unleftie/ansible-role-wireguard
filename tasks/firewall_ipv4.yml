@@ -22,7 +22,11 @@
     jump: ACCEPT
     state: present
     comment: "wg from external"
-  notify: save_iptables_rules
+  notify:
+    - save_iptables_rules_redhat_ipv4
+    - save_iptables_rules_debian_ipv4
+    - save_iptables_rules_redhat_ipv6
+    - save_iptables_rules_debian_ipv6
 
 - name: Allow forwarding (1/2)
   iptables:
@@ -33,7 +37,11 @@
     state: present
     comment: "wg forward from {{ item }} to {{ wg_interface }}"
   with_items: "{{ ansible_interfaces | reject('search', 'lo') | reject('search', '{{ wg_interface }}') }}"
-  notify: save_iptables_rules
+  notify:
+    - save_iptables_rules_redhat_ipv4
+    - save_iptables_rules_debian_ipv4
+    - save_iptables_rules_redhat_ipv6
+    - save_iptables_rules_debian_ipv6
 
 - name: Allow forwarding (2/2)
   iptables:
@@ -44,7 +52,11 @@
     state: present
     comment: "wg forward from {{ wg_interface }} to {{ item }}"
   with_items: "{{ ansible_interfaces | reject('search', 'lo') | reject('search', '{{ wg_interface }}') }}"
-  notify: save_iptables_rules
+  notify:
+    - save_iptables_rules_redhat_ipv4
+    - save_iptables_rules_debian_ipv4
+    - save_iptables_rules_redhat_ipv6
+    - save_iptables_rules_debian_ipv6
 
 - name: Allow dns tcp access from wg
   iptables:
@@ -56,7 +68,11 @@
     jump: ACCEPT
     state: present
     comment: "dns tcp access from {{ wg_interface }}"
-  notify: save_iptables_rules
+  notify:
+    - save_iptables_rules_redhat_ipv4
+    - save_iptables_rules_debian_ipv4
+    - save_iptables_rules_redhat_ipv6
+    - save_iptables_rules_debian_ipv6
 
 - name: Allow dns udp access from wg
   iptables:
@@ -68,7 +84,11 @@
     jump: ACCEPT
     state: present
     comment: "dns udp access from {{ wg_interface }}"
-  notify: save_iptables_rules
+  notify:
+    - save_iptables_rules_redhat_ipv4
+    - save_iptables_rules_debian_ipv4
+    - save_iptables_rules_redhat_ipv6
+    - save_iptables_rules_debian_ipv6
 
 - name: Allow NAT
   iptables:
@@ -78,7 +98,11 @@
     jump: MASQUERADE
     state: present
     comment: "wg nat"
-  notify: save_iptables_rules
+  notify:
+    - save_iptables_rules_redhat_ipv4
+    - save_iptables_rules_debian_ipv4
+    - save_iptables_rules_redhat_ipv6
+    - save_iptables_rules_debian_ipv6
 
 - name: Allow client-to-client communication
   block:
@@ -103,7 +127,11 @@
         state: present
         comment: "wg client-to-client communication"
   when: not wg_isolate_clients
-  notify: save_iptables_rules
+  notify:
+    - save_iptables_rules_redhat_ipv4
+    - save_iptables_rules_debian_ipv4
+    - save_iptables_rules_redhat_ipv6
+    - save_iptables_rules_debian_ipv6
 
 - name: Isolate client-to-client communication
   block:
@@ -128,4 +156,8 @@
         state: present
         comment: "wg clients isolation"
   when: wg_isolate_clients | bool
-  notify: save_iptables_rules
+  notify:
+    - save_iptables_rules_redhat_ipv4
+    - save_iptables_rules_debian_ipv4
+    - save_iptables_rules_redhat_ipv6
+    - save_iptables_rules_debian_ipv6
