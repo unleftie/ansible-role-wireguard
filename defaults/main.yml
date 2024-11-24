@@ -1,5 +1,5 @@
 ---
-wg_ipv6_support: true
+wg_ipv6_support: false # experimental
 wg_ipv6_cidr: 96
 wg_short_ipv6_pool_part: "fd06:6969:6969:abbc::"
 
